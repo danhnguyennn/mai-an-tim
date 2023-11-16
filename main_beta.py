@@ -1659,8 +1659,8 @@ class threadToolTds(QThread):
                                             with open('data\\account_done.txt', 'a', encoding='utf-8') as save:
                                                 save.write(f"{self.usertds}|{self.pwdtds}|{xu_total}\n")
                                             for _ in range(5):
-                                                self.usertds = randStr(random.randint(8, 15))+str(random.randint(100, 999))
-                                                self.pwdtds  = randStr(random.randint(8, 15))
+                                                self.usertds = randStr(8)+str(random.randint(100, 999))
+                                                self.pwdtds  = randStr(8)
                                                 g_captcha_result = bypassCaptcha(self.apikey1st)
                                                 new_usertds = self.tds.regTds(g_captcha_result, self.usertds, self.pwdtds)
                                                 if new_usertds == False:
