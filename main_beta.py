@@ -955,6 +955,7 @@ class threadToolTds(QThread):
     def __init__(self, dataWindow):
         super(threadToolTds, self).__init__()
         self.mutex = QMutex()
+        self.event = Event()
         self.row            = dataWindow['row']
         self.folder         = self.row+1
         object_id           = dataWindow['object_id']
@@ -1430,7 +1431,7 @@ class threadToolTds(QThread):
                                 self.adb.runShell("input swipe 588 300 577 1600 100") # vuốt lên đầu
                                 self.dict_data.update({'code': 100, 'status': 'Đang lấy username cá nhân'})
                                 self.sendDataUpMainScreen.emit(self.dict_data)
-                                for _ in range(5):
+                                for _ in range(2):
                                     username = self.getUsername()
                                     print(self.row, username)
                                     if 'tiktok' in username:
@@ -1567,8 +1568,7 @@ class threadToolTds(QThread):
                                     self.adb.doubleClick(x, y)
                                     self.data_like['data'].pop(0)
 
-                                event = Event()
-                                my_thread = Thread(target=self.interactTiktok, args=(event, ))
+                                my_thread = Thread(target=self.interactTiktok)
                                 my_thread.start()
 
                                 delay = random.randint(int(self.dlMin), int(self.dlMax))
@@ -1577,7 +1577,7 @@ class threadToolTds(QThread):
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     sleep(1)
 
-                                event.set()
+                                self.event.set()
                                 my_thread.join()
 
                                 # Duyệt Job
@@ -1709,32 +1709,30 @@ class threadToolTds(QThread):
                     file.write(f"Thread: {self.row} : {tb}\n\n")
             sleep(5)
 
-    def interruptible_sleep(self, seconds, event):
+    def interruptible_sleep(self, seconds):
         for _ in range(seconds):
-            if event.is_set():
+            if self.event.is_set():
                 break
             sleep(1)
-    def interactTiktok(self, event: Event):
+    def interactTiktok(self):
         self.adb.runShell("input keyevent 4")
-        while not event.is_set():
+        while not self.event.is_set():
             self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
-            # sleep(random.randint(3, 7))
-            self.interruptible_sleep(random.randint(3, 7), event)
-            if event.is_set(): break
+            self.interruptible_sleep(random.randint(3, 7), self.event)
+            if self.event.is_set(): break
             tt = random.randint(0, 1)
             if tt == 1:
                 size = self.adb.getvmSize()
                 x = int(size[0]) / 2
                 y = int(size[1]) / 2
                 self.adb.doubleClick(x, y)
-                self.interruptible_sleep(random.randint(2, 5), event)
-                if event.is_set(): break
+                self.interruptible_sleep(random.randint(2, 5), self.event)
+                if self.event.is_set(): break
                 self.adb.runShell("input keyevent 4")
-            if event.is_set(): break
-            self.interruptible_sleep(random.randint(3, 7), event)
-            if event.is_set(): break
+            if self.event.is_set(): break
+            self.interruptible_sleep(random.randint(3, 7), self.event)
+            if self.event.is_set(): break
             self.adb.runShell("input keyevent 4")
-
     def clearDataTiktok(self):
         # for _ in range(20):
         self.adb.runShell("am force-stop com.ss.android.ugc.trill")
@@ -2001,6 +1999,7 @@ class threadToolTds(QThread):
         pass
 
     def stop(self):
+        self.event.set()
         self.adb.runShell("am force-stop com.ss.android.ugc.trill", check=True) # đóng tiktok
         self.adb.runShell("input keyevent 3", check=True) # về home
         self.terminate()
