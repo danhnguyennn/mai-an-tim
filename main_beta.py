@@ -1709,9 +1709,9 @@ class threadToolTds(QThread):
                     file.write(f"Thread: {self.row} : {tb}\n\n")
             sleep(5)
 
-    def interruptible_sleep(self, seconds):
+    def interruptible_sleep(self, seconds, event):
         for _ in range(seconds):
-            if self.event.is_set():
+            if event.is_set():
                 break
             sleep(1)
     def interactTiktok(self):
