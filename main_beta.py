@@ -1447,8 +1447,8 @@ class threadToolTds(QThread):
                                         self.sendDataUpMainScreen.emit(self.dict_data)
                                         continue
                                     add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
-                                    if add: break
-                                    else: sleep(5)
+                                    # if add: break
+                                    # else: sleep(5)
 
                                     if add:
                                         check = True
@@ -1456,6 +1456,7 @@ class threadToolTds(QThread):
                                         self.sendDataUpMainScreen.emit(self.dict_data)
                                     else:
                                         upload = True
+                                        sleep(5)
                                     break 
                                 else:
                                     self.adb.runShell("input keyevent 4")
