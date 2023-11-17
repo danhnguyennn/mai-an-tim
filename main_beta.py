@@ -1571,6 +1571,7 @@ class threadToolTds(QThread):
                                 self.adb.runShell("input keyevent 4")
                                 self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row)
                                 self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
+                                self.event = Event()
                                 my_thread = Thread(target=self.interactTiktok)
                                 my_thread.start()
 
@@ -1665,10 +1666,10 @@ class threadToolTds(QThread):
                                                 self.usertds = randStr(8)+str(random.randint(100, 999))
                                                 self.pwdtds  = randStr(8)
                                                 g_captcha_result = bypassCaptcha(self.apikey1st)
-                                                self.tds.regTds(g_captcha_result, self.usertds, self.pwdtds)
-                                                if username == False:
+                                                new_username = self.tds.regTds(g_captcha_result, self.usertds, self.pwdtds)
+                                                if new_username == False:
                                                     continue
-                                                self.dict_data.update({'code': 200, 'usertds': self.usertds, 'pwdtds': self.pwdtds, 'xu': 0, 'status': f'Tài khoản đã được {xu_total} xu, thay đổi qua tài khoản {self.usertds}'})
+                                                self.dict_data.update({'code': 200, 'usertds': self.usertds, 'pwdtds': self.pwdtds, 'xu': 0, 'status': f'Tài khoản đã được {xu_total} xu, thay đổi qua tài khoản {new_username}'})
                                                 self.sendDataUpMainScreen.emit(self.dict_data)
                                                 break
                                             
@@ -1921,7 +1922,7 @@ class threadToolTds(QThread):
             if '@' in element.attrib['text']:
                 username = element.attrib['text'].replace("@", "")
                 return username
-        return False
+        return ''
     def upAvatar(self, folder_avater):
         self.dict_data.update({'code': 100, 'status': 'Cấp quyền bộ nhớ, di chuyển ảnh random lên máy'})
         self.sendDataUpMainScreen.emit(self.dict_data)
