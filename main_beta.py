@@ -1440,15 +1440,15 @@ class threadToolTds(QThread):
                                 if username != False and len(username) > 4:
                                     self.dict_data.update({'code': 100, 'status': f'Đang cấu hình username: {username}'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
-                                    # for _ in range(2):
-                                    g_captcha_result = bypassCaptcha(self.apikey1st)
-                                    if g_captcha_result == False:
-                                        self.dict_data.update({'code': 100, 'status': f'Giải captcha thất bại.'})
-                                        self.sendDataUpMainScreen.emit(self.dict_data)
-                                        continue
-                                    add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
-                                    # if add: break
-                                    # else: sleep(5)
+                                    for _ in range(2):
+                                        g_captcha_result = bypassCaptcha(self.apikey1st)
+                                        if g_captcha_result == False:
+                                            self.dict_data.update({'code': 100, 'status': f'Giải captcha thất bại.'})
+                                            self.sendDataUpMainScreen.emit(self.dict_data)
+                                            continue
+                                        add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
+                                        if add: break
+                                        else: sleep(10)
 
                                     if add:
                                         check = True
