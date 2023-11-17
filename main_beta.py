@@ -1497,13 +1497,13 @@ class threadToolTds(QThread):
                                 if not response: 
                                     sleep(random.randint(2, 5))
                                     continue
-                                if type_get_job == 'tiktok_like':
-                                    try:
-                                        type_get_job = 'tiktok_follow'
-                                        response['error']
-                                        response = self.tds.getJobTds(type_get_job, prx)
-                                    except:
-                                        self.data_like = response
+                                # if type_get_job == 'tiktok_like':
+                                #     try:
+                                #         type_get_job = 'tiktok_follow'
+                                #         response['error']
+                                #         response = self.tds.getJobTds(type_get_job, prx)
+                                #     except:
+                                #         self.data_like = response
                             else:
                                 response = self.data_like
                             
@@ -1568,6 +1568,9 @@ class threadToolTds(QThread):
                                     self.adb.doubleClick(x, y)
                                     self.data_like['data'].pop(0)
 
+                                self.adb.runShell("input keyevent 4")
+                                self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row)
+                                self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
                                 my_thread = Thread(target=self.interactTiktok)
                                 my_thread.start()
 
@@ -1662,10 +1665,10 @@ class threadToolTds(QThread):
                                                 self.usertds = randStr(8)+str(random.randint(100, 999))
                                                 self.pwdtds  = randStr(8)
                                                 g_captcha_result = bypassCaptcha(self.apikey1st)
-                                                new_usertds = self.tds.regTds(g_captcha_result, self.usertds, self.pwdtds)
-                                                if new_usertds == False:
+                                                self.tds.regTds(g_captcha_result, self.usertds, self.pwdtds)
+                                                if username == False:
                                                     continue
-                                                self.dict_data.update({'code': 200, 'usertds': self.usertds, 'pwdtds': self.pwdtds, 'status': f'Tài khoản đã được {xu_total} xu, thay đổi qua tài khoản {new_usertds}'})
+                                                self.dict_data.update({'code': 200, 'usertds': self.usertds, 'pwdtds': self.pwdtds, 'xu': 0, 'status': f'Tài khoản đã được {xu_total} xu, thay đổi qua tài khoản {self.usertds}'})
                                                 self.sendDataUpMainScreen.emit(self.dict_data)
                                                 break
                                             
@@ -1684,6 +1687,7 @@ class threadToolTds(QThread):
                                             self.sendDataUpMainScreen.emit(self.dict_data)
                                             g_captcha_result = bypassCaptcha(self.apikey1st)
                                             add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
+                                            print(add)
                                             if add: 
                                                 self.dict_data.update({'code': 200, 'user_tiktok': username, 'status': f'Cấu hình thành công: {username}'})
                                                 self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1691,11 +1695,11 @@ class threadToolTds(QThread):
 
                                 except Exception as bug: 
                                     tb = traceback.format_exc()
-                                    print(tb)
+                                    print("Exception 2", tb)
 
                         except:
                             tb = traceback.format_exc()
-                            print(tb)
+                            print("Exception 2", tb)
                             self.dict_data.update({'code': 100, 'status': f'Lỗi lấy job {type_get_job}'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             sleep(5)
@@ -1715,7 +1719,6 @@ class threadToolTds(QThread):
                 break
             sleep(1)
     def interactTiktok(self):
-        self.adb.runShell("input keyevent 4")
         while not self.event.is_set():
             self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
             self.interruptible_sleep(random.randint(3, 7), self.event)
