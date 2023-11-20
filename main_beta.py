@@ -1646,7 +1646,7 @@ class threadToolTds(QThread):
                                     self.dict_data.update({'code': 100, 'status': 'Đang giải captcha ...'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     self.bypassCaptchaNumber()
-                                elif self.adb.find_image('img\\captcha8.png', 1, row=self.row):
+                                elif self.adb.find_image('img\\vohieuhoa.png', 1, threshold=0.7, row=self.row):
                                     check = False
                                     self.session = 'FAIL'
                                     self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username} >> đã bú: {formatted_xu}'})
