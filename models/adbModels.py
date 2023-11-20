@@ -92,7 +92,7 @@ class ADB_TOOL:
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             average_pixel_value = np.mean(gray_image)
-            print(average_pixel_value)
+            # print(average_pixel_value)
             if average_pixel_value < 10:
                 return False
             else:
@@ -133,85 +133,3 @@ class ADB_TOOL:
         except:
             return False
     
-# adb = ADB_TOOL('420073a5d0d6b42f')
-
-def startTiktok():
-    adb.checkXml(CountRepeat=5, element='//node[@text="Bỏ qua"]')
-    adb.checkXml(CountRepeat=5, element='//node[@text="Bắt đầu xem"]')
-    adb.runShell("input swipe 224 1435 143 285 100")
-    for _ in range(15):
-        if adb.checkXml(CountRepeat=1, element='//node[@content-desc="Hồ sơ"]'): break
-        adb.runShell("input swipe 224 1435 143 285 100")
-def registerTiktok():
-    adb.checkXml(element='//node[@content-desc="Tiếp tục với Google"]')
-    adb.checkXml(element='//node[@resource-id="com.google.android.gms:id/account_name"]')
-    if adb.checkXml(CountRepeat=20, element='//node[@text="Ngày sinh"]'):
-        adb.runShell(f"input swipe 266 1663 283 1263 {random.randint(900,1100)}")
-        adb.runShell(f"input swipe 536 1650 550 1296 {random.randint(900,1100)}")
-        adb.runShell(f"input swipe 803 1383 813 1881 {random.randint(90,130)}") # Năm Sinh
-        adb.runShell(f"input swipe 803 1383 813 1881 {random.randint(100,120)}") # Năm Sinh
-        adb.runShell(f"input swipe 803 1383 813 1881 {random.randint(200,300)}") # Năm Sinh
-        adb.runShell(f"input swipe 803 1383 813 1881 {random.randint(200,400)}") # Năm Sinh
-
-        xml_file = f"{adb.adbs}.xml"
-        adb.checkXml(element='//node[@text="Tiếp"]', xml=xml_file)
-        adb.checkXml(element='//node[@text="Xác nhận"]')
-        for _ in range(5):
-            if adb.checkXml(CountRepeat=1, element='//node[@content-desc="Hồ sơ"]') == False:
-                adb.checkXml(element='//node[@text="TỪ CHỐI"]')
-def upAvatar():
-    folder_avater = 'F:\\images'
-    # adb.runShell('pm grant com.ss.android.ugc.trill android.permission.WRITE_EXTERNAL_STORAGE')
-    # imgs = adb.runShell('rm -r /sdcard/Pictures/*')
-    # img_name = randomPictures(folder_avater)
-    # print(img_name)
-    # adb.device.push(folder_avater+'/'+img_name, '/sdcard/Pictures/0.jpg')
-    # adb.runShell('am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/0.jpg')
-    
-    # adb.find_image('img\\suahoso.png', 2)
-    # adb.checkXml(element='//node[@text="Thay đổi ảnh"]', Xoffsetplus=100, Yoffsetplus=-100)
-    # adb.find_image('img\\chontuthuvien.png', 5)
-    posList = adb.checkXml(CountRepeat=1, element='//node[@class="android.widget.ImageView"]', click=False, posList=True)
-    print("len", len(posList))
-    for _ in range(len(posList)):
-        pos = posList[_]
-        print(pos)
-        adb.clicks(int(pos[0]), int(pos[1]))
-        sleep(2)
-        black = adb.checkColor()
-        if black: break
-        adb.runShell("input keyevent 4")
-    adb.find_image('img\\choose_img.png', 2)
-    adb.checkXml(CountRepeat=1, element='//node[@text="Xác nhận"]')
-    up = True
-    for _ in range(2):
-        if adb.checkXml(CountRepeat=2, element='//node[@text="Lưu & đăng" or @text="Lưu"]') == False: 
-            up = False
-            break
-        sleep(5)
-    if adb.checkXml(CountRepeat=20, element='//node[@text="Thay đổi ảnh"]', click=False):
-        adb.runShell("input keyevent 4")
-        if up == False:
-            return upAvatar(folder_avater)
-    else:
-        adb.runShell("input keyevent 4")
-        adb.runShell("input keyevent 4")
-    return True
-def randomPictures(folderavt):
-    if os.path.exists(folderavt) == False:
-        return "NO_PATH_IMAGE"
-    image = random.choice(os.listdir(folderavt))
-    return image
-def getUsername():
-    adb.runShell("input swipe 588 300 577 1600 100") # vuốt lên đầu
-    for _ in range(15):
-        if adb.checkXml(CountRepeat=1, element='//node[@content-desc="Hồ sơ"]'): break
-        adb.runShell("input swipe 224 1435 143 285 100")
-    adb.runShell("input swipe 588 300 577 1600 100") # vuốt lên đầu
-    root = html.parse(adb.dumXml())
-    elements = root.findall(".//*[@resource-id]")
-    for element in elements:
-        if '@' in element.attrib['text']:
-            username=element.attrib['text'].replace("@", "")
-            print(username)
-
