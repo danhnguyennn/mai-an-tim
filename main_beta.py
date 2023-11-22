@@ -27,7 +27,7 @@ from models.adbModels import ADB_TOOL
 from models.mongoServer import MONGO_DB
 from models.captcha import bypassCaptcha
 
-VERSION = '1.1.1.5'
+VERSION = '1.1.1.6'
 
 def Information(content):
     msg = QtWidgets.QMessageBox()
@@ -1328,6 +1328,12 @@ class threadToolTds(QThread):
                     self.dict_data.update({'code': 100, 'status': f'Tiến hành bật VPN {self.vpn}'})
                     self.sendDataUpMainScreen.emit(self.dict_data)
                     self.changeVPN(change=True, off=False)
+                    sleep(2)
+                    
+                    # clear image 
+                    self.adb.runShell('rm -r /sdcard/Pictures/*')  # xóa toàn bộ ảnh 
+                    self.adb.runShell("monkey -p com.sec.android.gallery3d -c android.intent.category.LAUNCHER 1")
+                    sleep(7)
 
                     # Mở tiktok
                     self.dict_data.update({'code': 100, 'status': f'Tiến hành mở tiktok'})
@@ -1386,6 +1392,14 @@ class threadToolTds(QThread):
                         self.dict_data.update({'code': 100, 'status': 'Vô hồ sơ đăng ký.'})
                         self.sendDataUpMainScreen.emit(self.dict_data)
                         self.adb.clicks(969, 1848) # Hồ Sơ
+                        # 
+                        self.adb.clicks(969, 1848)                    
+                        sleep(3)
+                        if self.adb.checkXml(CountRepeat=5,element='//node[@text="Chuyển đổi tài khoản"]'):                                           
+                            sleep(3)
+                        else:
+                            self.adb.find_image('img\\dangky8.png', 2, row=self.row) # check popup
+                        # 
                         sleep(2)
                         if self.adb.find_image('img\\logingmail.png', 5, click=False, row=self.row) or self.adb.find_image('img\\dangky8.png', 5, row=self.row): # check popup
                             # vô hồ sơ đăng ký
@@ -1485,6 +1499,7 @@ class threadToolTds(QThread):
                                         self.adb.runShell("input keyevent 4")
                                         sleep(3)
                                         self.adb.runShell("input keyevent 4")
+                                        continue
                                     break
                                 
                                 if upload == True:
@@ -1495,7 +1510,7 @@ class threadToolTds(QThread):
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     up_avt = self.upAvatar(self.folder_image)
                                     if up_avt:
-                                        for t in range(15, -1, -1):
+                                        for t in range(30, -1, -1):
                                             self.dict_data.update({'code': 100, 'status': f'Chờ {t} giây để tiktok load avatar ...'})
                                             self.sendDataUpMainScreen.emit(self.dict_data)
                                             sleep(1)
@@ -1572,14 +1587,14 @@ class threadToolTds(QThread):
                             
                             response = self.tds.getJobTds(type_get_job, prx)
                             if response == False: 
-                                sleep(random.randint(2, 5))
+                                sleep(random.randint(5, 10))
                                 continue
                             
                             try:
                                 cache = response['cache']
                                 idjob = response['data'][0]['id']
                             except:
-                                print("ERR CACHE:", response)
+                                print(self.row, "ERR CACHE:", response)
                                 continue
 
                             link = response['data'][0]['link']
@@ -1778,16 +1793,24 @@ class threadToolTds(QThread):
                                             self.access_token = getAccount['access_token']
                                             self.tds = API_TDS(self.access_token)
                                             
-                                            # cấu hình 
-                                            self.dict_data.update({'code': 100, 'status': f'Đang cấu hình username: {username}'})
-                                            self.sendDataUpMainScreen.emit(self.dict_data)
-                                            g_captcha_result = bypassCaptcha(self.apikey1st)
-                                            add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
-                                            print(add)
+                                            # cấu hình
+                                            for i in range(5): 
+                                                self.dict_data.update({'code': 100, 'status': f'Đang cấu hình username: {username}'})
+                                                self.sendDataUpMainScreen.emit(self.dict_data)
+                                                g_captcha_result = bypassCaptcha(self.apikey1st)
+                                                add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
+                                                print(add)
+                                                if add: break
+                                                else:
+                                                    for t in range(800, -1, -1):    
+                                                        self.dict_data.update({'code': 100, 'status': f'Chờ {t} giây để cấu hình sau khi đổi acc'})
+                                                        self.sendDataUpMainScreen.emit(self.dict_data)
+                                                        sleep(1)
                                             if add:
                                                 self.dict_data.update({'code': 200, 'user_tiktok': username, 'status': f'Cấu hình thành công: {username}'})
                                                 self.sendDataUpMainScreen.emit(self.dict_data)
                                                 break
+
 
                                 except Exception as bug: 
                                     tb = traceback.format_exc()
@@ -1818,10 +1841,9 @@ class threadToolTds(QThread):
         sleep(3)
         self.adb.find_image('img\\riengtu8.png', 5, row=self.row)
         self.adb.find_image('img\\onriengtu8.png', 5, row=self.row)
-        if '5200' in self.phone_device:
-            self.adb.find_image('img\\switchriengtu9.png', 5, row=self.row)
-        elif '4200' in self.phone_device:
-            self.adb.find_image('img\\switchriengtu8.png', 5, row=self.row)
+        sleep(1)
+        self.adb.checkXml(CountRepeat=5, element='//node[@text="Chuyển đổi"]')
+        sleep(1)
         self.adb.runShell("input keyevent 4")
         self.adb.runShell("input keyevent 4")
     def bypassCaptchaNumber(self):
@@ -2086,12 +2108,17 @@ class threadToolTds(QThread):
 
         self.dict_data.update({'code': 100, 'status': 'Tiến hành upload avatar'})
         self.sendDataUpMainScreen.emit(self.dict_data)
-        self.adb.find_image('img\\suahoso.png', 2)
+
+        # self.adb.find_image('img\\suahoso.png', 2)
+        self.adb.checkXml(CountRepeat=3,element='//node[@text="Sửa hồ sơ"]')
+        sleep(2)
         check_hs = self.adb.checkXml(CountRepeat=5, element='//node[@text="Thay đổi ảnh"]', Xoffsetplus=100, Yoffsetplus=-100) # hồ sơ mặc định
         if check_hs == False:
             self.adb.checkXml(CountRepeat=5, element='//node[@text="Sửa hồ sơ"]', Xoffsetplus=50, Yoffsetplus=300)  # hồ sơ mới 
-        sleep(2)
-        self.adb.find_image('img\\chontuthuvien.png', 5, row=self.row)
+            sleep(3) 
+            self.adb.checkXml(CountRepeat=2 ,element='//node[@text="Thay đổi ảnh"]')
+        sleep(3)
+        self.adb.checkXml(CountRepeat=5,element='//node[@text="Chọn từ Thư viện"]')
         
         # get list image 
         upSuc = False

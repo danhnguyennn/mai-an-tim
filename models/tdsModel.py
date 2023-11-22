@@ -85,12 +85,13 @@ class API_TDS:
         for i in range(5):
             try:
                 response = requests.get(f"https://traodoisub.com/api/?fields={type_job}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
+                if 'Thao tác quá nhanh' in str(response):
+                    return False
                 return response
             except Exception as e:
                 s = repr(e)
                 if 'Cannot connect to proxy' in s or 'certificate verify failed' in s or 'Read timed out.' in s:
                     proxie = self.checkProxy()
-                time.sleep(2)
         return False
     def checkCacheJob(self, cache_job, idjob, proxie={}):
         for i in range(5):
