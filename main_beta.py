@@ -14,7 +14,6 @@ import numpy as np
 from lxml import html
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from bs4 import BeautifulSoup
 from threading import Thread, Event
 from PyQt5.QtWidgets import *
 import xml.etree.ElementTree as ET
