@@ -153,17 +153,19 @@ class API_TDS:
             'username': usertds,
             'password': pwdtds,
         }
-        try:
-            self.ss.post('https://traodoisub.com/scr/login.php', data=data, proxies=proxie, timeout=10)
-            data = {
-                'oldpass': pwdtds,
-                'newpass': newpass,
-                'renewpass': newpass,
-            }
-            response = self.ss.post('https://traodoisub.com/scr/doipass.php', data=data, proxies=proxie, timeout=10).text
-            print(response)
-            if response == '0':
-                return True
-            return False
-        except:
-            return False
+        for i in range(5):
+            try:
+                self.ss.post('https://traodoisub.com/scr/login.php', data=data, proxies=proxie, timeout=10)
+                data = {
+                    'oldpass': pwdtds,
+                    'newpass': newpass,
+                    'renewpass': newpass,
+                }
+                response = self.ss.post('https://traodoisub.com/scr/doipass.php', data=data, proxies=proxie, timeout=10).text
+                print(response)
+                if response == '0':
+                    return True
+                return False
+            except:
+                proxie = self.checkProxy()
+        return False

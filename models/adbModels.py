@@ -29,7 +29,7 @@ class ADB_TOOL:
             except:
                 if check == True: return False
                 time.sleep(5)
-                print(command, "Lỗi mất kết nối usb")
+                print(self.adbs, command, "Lỗi mất kết nối usb")
         return False
     def checkVerisonAndroid(self):
         result = self.runShell("getprop ro.build.version.release")

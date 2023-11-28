@@ -26,7 +26,7 @@ class MONGO_DB:
             self.accountTds.insert_one(dict_account)
         if "setting" not in table_list:
             dict_setting = {
-                'getMail': 'api', # file
+                'getMail': 'api', # file # shop
                 'site': 'taphoammo',
                 'apiKeyTaphoa': '',
                 'keyShop': '',
@@ -34,11 +34,22 @@ class MONGO_DB:
                 'path_image': '',
                 'dlMin': 5,
                 'dlMax': 10,
-                'limitXu': '10000000',
+                'limitXu': {
+                    'limit_xu_0': '10000000',
+                    'limit_xu_1': '20000000',
+                    'limit_xu_2': '30000000',
+                    'limit_xu_3': '40000000',
+                },
+                'interactSleepAcc': True,
+                'interactSleepJob': True,
                 # 'timeStart': ''
                 # 'timeEnd': ''
-                'stopSleep': 0,
-                'limitStopAcc': 100
+                'sleepStopAcc': 0,
+                'limitStopAcc': 100,
+                'sleepStopJob': 0,
+                'limitStopJob': 500,
+                'userShopMail': '',
+                'pwdShopMail': ''
             }
             self.settingTds.insert_one(dict_setting)
         if "settingShow" not in table_list:
@@ -98,10 +109,27 @@ class MONGO_DB:
         return update_setting
     def deleColumn(self):
         column_to_remove = 'vpn'
-        self.settingTds.update_many({}, {'$unset': {column_to_remove: ""}})
+        self.settingTds.update_many({}, {'$unset': {
+            "vpn": "",
+            "stopSleep": ""
+        }})
     def addColumnSetting(self):
         update_criteria = {}
-        update_data = {'$set': {'limitXu': '10000000', 'stopSleep': 0, 'limitStopAcc': 100}}
+        update_data = {'$set': {
+            'limitXu': {
+                'limit_xu_0': '10000000',
+                'limit_xu_1': '20000000',
+                'limit_xu_2': '30000000',
+                'limit_xu_3': '40000000',
+            },
+            'sleepStopAcc': 0,
+            'interactSleepAcc': True,
+            'interactSleepJob': True,
+            'sleepStopJob': 0,
+            'limitStopJob': 500,
+            'userShopMail': '',
+            'pwdShopMail': ''
+            }}
         self.settingTds.update_many(update_criteria, update_data)
 
     # table column show
