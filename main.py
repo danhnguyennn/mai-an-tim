@@ -1858,11 +1858,11 @@ class threadToolTds(QThread):
                                         changeAcc = False
                                         if int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_0'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_0'].replace(',', ''))+200000:
                                             changeAcc = True
-                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_1'].replace(',', ''))*2 and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_1'].replace(',', ''))*2+200000:
+                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_1'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_1'].replace(',', ''))+200000:
                                             changeAcc = True
-                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_2'].replace(',', ''))*3 and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_2'].replace(',', ''))*3+200000:
+                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_2'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_2'].replace(',', ''))+200000:
                                             changeAcc = True
-                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_3'].replace(',', ''))*4 and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_3'].replace(',', ''))*4+200000:
+                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_3'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_3'].replace(',', ''))+200000:
                                             changeAcc = True
 
                                         # change account 
@@ -2139,7 +2139,7 @@ class threadToolTds(QThread):
                     self.dict_data.update({'code': 100, 'status': f'Xác nhận tên tiktok.'})
                     self.sendDataUpMainScreen.emit(self.dict_data) 
                     c = 0
-                    for _ in range(15):
+                    for _ in range(30):
                         if self.adb.checkXml(CountRepeat=1, element='//node[@text="Xác nhận"]'):
                             c += 1
                             sleep(5)
