@@ -1231,6 +1231,7 @@ class threadToolTds(QThread):
                         return self.sendDataUpMainScreen.emit(self.dict_data)
 
                 # start thread tool
+                self.follow_me = False
                 xumotacc = 0
                 ngaysinh = False
                 if self.session == 'FAIL':
@@ -2002,6 +2003,19 @@ class threadToolTds(QThread):
                 if self.event.is_set(): break
                 self.adb.runShell("input keyevent 4")
                 sleep(2)
+
+            # follow default tiktok 
+            if random.randint(0, 1) == 1 and self.follow_me == False:
+                link_follow = 'snssdk1180://user/profile/danh.ng28'
+                self.adb.runShell(f"am start -a android.intent.action.VIEW -d {link_follow}")
+                self.adb.runShell("settings put system accelerometer_rotation 0")
+                sleep(random.randint(2, 4))
+                self.adb.find_image('img\\follow8.png', 10, row=self.row)
+                self.adb.runShell("input keyevent 4")
+                self.follow_me = True
+                sleep(2)
+            # end follow
+
             self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
             if self.event.is_set(): break
             self.adb.runShell("input keyevent 4")
