@@ -9,7 +9,10 @@ class API_TDS:
             self.arr_proxy = file.readlines()
         self.ss = requests.Session()
         self.access_token = access_token
+        self.check_proxy = 0
     def getProxy(self):
+        if self.check_proxy >= 10:
+            return {}
         if len(self.arr_proxy) > 0:
             proxie = random.choice(self.arr_proxy).strip()
             splitProxy = proxie.split(':')
@@ -17,9 +20,14 @@ class API_TDS:
             port = splitProxy[1]
             user = splitProxy[2]
             pwd = splitProxy[3]
+            self.check_proxy = 0
             return {'https': f'http://{user}:{pwd}@{host}:{port}'}
         else:
-            return {}
+            time.sleep(3)
+            self.check_proxy += 1
+            with open('data\\proxy\\proxy.txt', 'r', encoding='utf-8') as file:
+                self.arr_proxy = file.readlines()
+            return self.getProxy()
     def checkProxy(self):
         for i in range(10):
             proxy = self.getProxy()
@@ -81,11 +89,15 @@ class API_TDS:
         except Exception as e:
             print("ERR", e)
             return False
-    def getJobTds(self, type_job='tiktok_follow', proxie={}):
+    def getJobTds(self, type_job='tiktok_follow'):
+        proxie = self.checkProxy()
         for i in range(5):
             try:
                 response = requests.get(f"https://traodoisub.com/api/?fields={type_job}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
+                print(response)
                 if 'Thao tác quá nhanh' in str(response):
+                    return False
+                elif response['data'] == []:
                     return False
                 return response
             except Exception as e:
@@ -93,7 +105,8 @@ class API_TDS:
                 if 'Cannot connect to proxy' in s or 'certificate verify failed' in s or 'Read timed out.' in s:
                     proxie = self.checkProxy()
         return False
-    def checkCacheJob(self, cache_job, idjob, proxie={}):
+    def checkCacheJob(self, cache_job, idjob):
+        proxie = self.checkProxy()
         for i in range(5):
             try:
                 response = requests.get(f"https://traodoisub.com/api/coin/?type={cache_job}&id={idjob}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
@@ -104,10 +117,13 @@ class API_TDS:
                     proxie = self.checkProxy()
                 time.sleep(2)
         return False
-    def submitJobFollow(self, type_api, proxie={}):
+    def submitJobFollow(self, type_api):
+        proxie = self.checkProxy()
         for i in range(5):
             try:
                 response = requests.get(f"https://traodoisub.com/api/coin/?type={type_api}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
+                # if response['code'] == 'error':
+                #     return False
                 return response
             except Exception as e:
                 s = repr(e)

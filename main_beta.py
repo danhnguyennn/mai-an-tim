@@ -27,7 +27,7 @@ from models.adbModels import ADB_TOOL
 from models.mongoServer import MONGO_DB
 from models.captcha import bypassCaptcha
 
-VERSION = '1.1.1.7'
+# VERSION = '1.1.1.7'
 
 def Information(content):
     msg = QtWidgets.QMessageBox()
@@ -60,9 +60,9 @@ class MainWindow(QMainWindow):
         # REMOVE TITLE BAR
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.uic.topVersionApp.setText(f'Version: {VERSION}')
-        self.uic.taskbar_version.setText(VERSION)
         self.runFirst()
+        self.uic.topVersionApp.setText(f'Version: {self.VERSION}')
+        self.uic.taskbar_version.setText(self.VERSION)
 
         # tasbar
         self.uic.taskbar_active.setText('Running : 0')
@@ -93,6 +93,7 @@ class MainWindow(QMainWindow):
             config = json.loads(file.read())
             self.stoLocation = config['StoLocation']
             self.dayrun = config['day']
+            self.VERSION = config['version']
         today = self.dayrun.split('-')
         current_time = getCurrentTime()['day']
         dayVn = current_time.split('-')
@@ -354,6 +355,9 @@ class MainWindow(QMainWindow):
         sleep_job = self.uic.sleep_job.text()
         job_sleep = self.uic.job_sleep.text()
 
+        timeStart = self.uic.startTime.text()
+        timeEnd = self.uic.endTime.text()
+
         if radioTaphoa:
             getMail = 'api'
             site = 'taphoammo'
@@ -365,8 +369,10 @@ class MainWindow(QMainWindow):
             site = 'local'
             with open('data\\mail\\gmail.txt', 'w', encoding='utf-8') as save:
                 save.write(textGmail)
-            self.mailDistribution()
+            if '@' in str(textGmail):
+                self.mailDistribution()
             self.uic.textGmail.clear()
+
         dict_setting = {
             'getMail': getMail, # file
             'site': site,
@@ -384,7 +390,9 @@ class MainWindow(QMainWindow):
             'sleepStopJob': sleepStopJob,
             'limitStopJob': limitStopJob,
             'userShopMail': user_shop,
-            'pwdShopMail': pwd_shop
+            'pwdShopMail': pwd_shop,
+            'timeStart': timeStart,
+            'timeEnd': timeEnd,
         }
         
         self.db.updateSetting(dict_setting)
@@ -410,6 +418,8 @@ class MainWindow(QMainWindow):
         self.limitStopJob       = dict_setting['limitStopJob']
         self.userShopMail       = dict_setting['userShopMail']
         self.pwdShopMail        = dict_setting['pwdShopMail']
+        self.timeStart          = dict_setting['timeStart']    
+        self.timeEnd            = dict_setting['timeEnd']
     def setSetting(self):
         if self.getMail == 'api':
             self.uic.radioTaphoa.setChecked(True)
@@ -444,6 +454,7 @@ class MainWindow(QMainWindow):
         self.uic.job_sleep.setValue(int(self.limitStopAcc))
         self.uic.job_sleep_2.setValue(int(self.limitStopJob))
         
+        # self.uic.startTime.
     # extension
     def resetSession(self):
         x = 0
@@ -465,10 +476,14 @@ class MainWindow(QMainWindow):
         try:
             base_directory = os.getcwd()
             input_file = 'data\\mail\\gmail.txt'
+            print(self.count)
             for i in range(self.count):
-                target_directory = os.path.join(base_directory, str(i), 'data', 'gmail.txt')
-                if os.path.exists(target_directory):
-                    open(target_directory, 'w').close()
+                target_directory = os.path.join(base_directory, 'data', 'mail', 'stream', str(i+1))
+                print(target_directory)
+                if os.path.exists(target_directory+'\\gmail.txt'):
+                    open(target_directory+'\\gmail.txt', 'w').close()
+                if os.path.exists(target_directory+'\\gmail_done.txt'):
+                    open(target_directory+'\\gmail_done.txt', 'w').close()
 
             with open(base_directory+'\\'+input_file, 'r') as f:
                 emails = f.readlines()
@@ -887,7 +902,9 @@ class MainWindow(QMainWindow):
             'sleepStopJob': self.sleepStopJob,
             'limitStopJob': self.limitStopJob,
             'userShopMail': self.userShopMail,
-            'pwdShopMail': self.pwdShopMail
+            'pwdShopMail': self.pwdShopMail,
+            'timeStart': self.timeStart,
+            'timeEnd': self.timeEnd
         }
     def __startOneThread(self):
         matches = [element for element in self.listThreadRunning if self.row == element]
@@ -1121,9 +1138,11 @@ class threadToolTds(QThread):
         self.sleepStopJob   = dataWindow['setting']['sleepStopJob']
         # path image
         self.folder_image   = dataWindow['setting']['path_image']
-        
-        # self.timeStart      = dataWindow['setting']['timeStart']      
-        # self.timeEnd        = dataWindow['setting']['timeEnd']
+        self.interactSleepAcc = dataWindow['setting']['interactSleepAcc']
+        self.interactSleepJob = dataWindow['setting']['interactSleepJob']
+
+        self.timeStart      = dataWindow['setting']['timeStart']      
+        self.timeEnd        = dataWindow['setting']['timeEnd']
         
         self.limitXu        = dataWindow['setting']['limitXu']
         # limit acc + job 
@@ -1223,12 +1242,28 @@ class threadToolTds(QThread):
                 if self.getMail == 'file':
                     with open(f'data\\mail\\stream\\{self.folder}\\gmail.txt', 'r', encoding='utf-8') as file:
                         self.arr_gmail = file.readlines()
-                    with open(f'data\\mail\\stream\\{self.folder}\\gmail_done.txt', 'r', encoding='utf-8') as file:
-                        self.arr_gmail_done = file.readlines()
-                    arr_gmaildone = self.duplicateFilter() # lọc trùng gmail done
-                    if len(self.arr_gmail) == len(arr_gmaildone):
+
+                    if len(self.arr_gmail) == 0:
                         self.dict_data.update({'code': 204, 'status': f'Tất cả gmail trong file đã được sử dụng.'})
                         return self.sendDataUpMainScreen.emit(self.dict_data)
+
+                # check time sleep
+                if self.timeStart == '12:00 AM' and self.timeEnd == '12:00 AM':
+                    t1 = '00:00'
+                    t2 = '24:00'
+                else:
+                    t_start = datetime.strptime(self.timeStart, '%I:%M %p')
+                    t_end   = datetime.strptime(self.timeEnd, '%I:%M %p')
+                    t1   = t_start.strftime('%H:%M')
+                    t2   = t_end.strftime('%H:%M')
+
+                now = datetime.now()
+                current_time = now.strftime("%H:%M")
+                if current_time < t1 or current_time >= t2:
+                    self.dict_data.update({'code': 100, 'status': f'[{current_time}] : đang trong thời gian nghỉ'})
+                    self.sendDataUpMainScreen.emit(self.dict_data)
+                    sleep(30)
+                    continue
 
                 # start thread tool
                 self.follow_me = False
@@ -1309,28 +1344,19 @@ class threadToolTds(QThread):
                         self.sendDataUpMainScreen.emit(self.dict_data)
 
                         if self.getMail == 'api': # file
-                            self.dict_data.update({'code': 100, 'status': 'Đang tranh giành gmail taphoa'})
+                            self.dict_data.update({'code': 100, 'status': 'Đang tranh giành gmail taphoammo'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             gmail = self.muaMail()
-                            gmail_t = gmail.split('|')
                         elif self.getMail == 'file': 
                             # self.mutex.lock()
-                            for m in range(len(self.arr_gmail)):
-                                gmail = self.arr_gmail[m].strip()
-                                if gmail not in str(self.arr_gmail_done):
-                                    gmail_t = gmail.split('|')
-                                    break
+                            gmail = self.arr_gmail[0].strip()
                             # self.mutex.unlock()
                         elif self.getMail == 'shop':
                             self.dict_data.update({'code': 100, 'status': 'Đang tranh giành gmail shop phan9999'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             gmail = self.buyMailShop1989(self.user_shop1989, self.pwd_shop1989)
-                            gmail_t = gmail.split('|')
-
-                        if gmail == '':
-                            self.dict_data.update({'code': 204, 'status': f'Tất cả gmail trong file đã được sử dụng.'})
-                            return self.sendDataUpMainScreen.emit(self.dict_data)
-
+                            
+                        gmail_t = gmail.split('|')
                         self.pwd_gmail = gmail_t[1].strip()
 
                         # Đăng nhập google
@@ -1416,8 +1442,14 @@ class threadToolTds(QThread):
                         if login == False: continue
                         else: break
 
-                    self.adb.runShell("am force-stop com.android.settings") 
+                    if self.getMail == 'file':
+                        self.arr_gmail.pop(0)
+                        file_w = open(f'data\\mail\\stream\\{self.folder}\\gmail.txt', 'w', encoding='utf-8')
+                        for mail in self.arr_gmail:
+                            file_w.write(mail.strip()+'\n')
+                        file_w.close()
 
+                    self.adb.runShell("am force-stop com.android.settings") 
                     # Bật VPN
                     self.dict_data.update({'code': 100, 'status': f'Tiến hành bật VPN {self.vpn}'})
                     self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1428,7 +1460,10 @@ class threadToolTds(QThread):
                     self.adb.runShell('rm -r /sdcard/Pictures/*')  # xóa toàn bộ ảnh 
                     self.adb.runShell("monkey -p com.sec.android.gallery3d -c android.intent.category.LAUNCHER 1")
                     sleep(7)
-
+                    self.adb.runShell('input keyevent KEYCODE_APP_SWITCH')
+                    sleep(1)
+                    if self.adb.checkXml(CountRepeat=2, element='//node[@text="ĐÓNG TẤT CẢ"]') == False:  
+                        self.adb.checkXml(CountRepeat=2, element='//node[@text="Đóng tất cả"]')  
                     # Mở tiktok
                     self.dict_data.update({'code': 100, 'status': f'Tiến hành mở tiktok'})
                     self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1668,11 +1703,11 @@ class threadToolTds(QThread):
                 
                 # run tds
                 list_nv = ['tiktok_like', 'tiktok_follow'] # tiktok_comment
-                self.data_like = {'cache': 0, 'data': []}
+                self.data_follow = {'cache': 0, 'data': []}
 
                 while check and self.session == 'OK':
-                    self.tds = API_TDS(self.access_token)
-                    prx = self.tds.checkProxy() # get proxy
+                    # self.tds = API_TDS(self.access_token)
+                    # prx = self.tds.checkProxy() # get proxy
                     for _ in range(20):
                         # type_get_job = random.choices(list_nv, weights=[0.6, 0.4])[0]
                         type_get_job = 'tiktok_follow'
@@ -1680,40 +1715,42 @@ class threadToolTds(QThread):
                             self.dict_data.update({'code': 100, 'status': f'Đang tìm job {type_get_job}'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             
-                            response = self.tds.getJobTds(type_get_job, prx)
-                            if response == False: 
-                                sleep(random.randint(5, 10))
-                                continue
-                            
+                            if len(self.data_follow['data']) <= 0:
+                                response = self.tds.getJobTds(type_get_job)
+                                if response == False:
+                                    sleep(3)
+                                    continue
+                                self.data_follow = response
                             try:
-                                cache = response['cache']
-                                idjob = response['data'][0]['id']
+                                self.cache = self.data_follow['cache']
+                                idjob = self.data_follow['data'][0]['id']
                             except:
                                 print(self.row, "ERR CACHE:", response)
                                 continue
-
-                            link = response['data'][0]['link']
-                            if cache < 14:
+                            
+                            print(getCurrentTime()['time'])
+                            print(self.data_follow)
+                            link = self.data_follow['data'][0]['link']
+                            if self.cache < 14:
                                 if type_get_job == 'tiktok_follow':
-                                    urljob = 'snssdk1180://user/profile/'+response['data'][0]['real_id']
-                                    namejob = response['data'][0]['uniqueID']
+                                    Thread(target=self.checkCacheTds, args=(idjob, )).start()
+                                    urljob = 'snssdk1180://user/profile/'+self.data_follow['data'][0]['real_id']
+                                    namejob = self.data_follow['data'][0]['uniqueID']
                                
                                     self.dict_data.update({'code': 100, 'status': f'Đang follow user: {namejob}'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     self.adb.runShell(f"am start -a android.intent.action.VIEW -d {urljob}")
                                     self.adb.runShell("settings put system accelerometer_rotation 0")
                                     sleep(random.randint(2, 4))
-                                    if self.adb.find_image('img\\follow8.png', 15, row=self.row):
-                                        pass
-                                    # Lỗi App thì vào fl theo search user
-                                    else:
+                                    if self.adb.find_image('img\\follow8.png', 10, row=self.row) == False:
                                         self.dict_data.update({'code': 100, 'status': f'Đang tìm kiếm user: {namejob}'})
                                         self.sendDataUpMainScreen.emit(self.dict_data)
                                         self.adb.runShell("am force-stop com.ss.android.ugc.trill")
+                                        sleep(2)
                                         self.adb.runShell("monkey -p com.ss.android.ugc.trill -c android.intent.category.LAUNCHER 1")
                                         self.adb.runShell("settings put system accelerometer_rotation 0")
                                         sleep(7)
-                                        for _ in range(4):
+                                        for _ in range(2):
                                             self.adb.find_image('img\\closequa8.png', 1, threshold=0.6, row=self.row)
                                             self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row)
                                             self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
@@ -1737,7 +1774,7 @@ class threadToolTds(QThread):
                                             sleep(3)
                                             self.adb.runShell("input keyevent 4")
                                             sleep(3)
-                                            self.adb.clicks(1003, 135, 1) # Click kính lúp
+                                            self.adb.clicks(1003, 135, 1) # Click kính lúp                                        
                                 elif type_get_job == 'tiktok_like':
                                     self.dict_data.update({'code': 100, 'status': f'Đang thích video: {idjob}'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1748,15 +1785,23 @@ class threadToolTds(QThread):
                                     x = int(size[0]) / 2
                                     y = int(size[1]) / 2
                                     self.adb.doubleClick(x, y)
-                                    self.data_like['data'].pop(0)
+                                    # self.data_like['data'].pop(0)
 
+                                # check follow
+                                self.dict_data.update({'code': 100, 'status': f'Check follow user: {namejob}'})
+                                self.sendDataUpMainScreen.emit(self.dict_data)
+                                
                                 # back lại khi follow xong 
                                 self.adb.runShell("input keyevent 4")
+                                if self.adb.find_image('img\\follow8.png', 2, row=self.row):
+                                    self.adb.runShell("input keyevent 4")
+                                self.data_follow['data'].pop(0)
+                            
                                 if self.adb.find_image('img\\captcha8.png', 1, row=self.row):
                                     self.dict_data.update({'code': 100, 'status': 'Đang giải captcha ...'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     self.bypassCaptchaNumber()
-                                elif self.adb.find_image('img\\vohieuhoa.png', 1, threshold=0.7, row=self.row):
+                                if self.adb.find_image('img\\vohieuhoa.png', 1, threshold=0.7, row=self.row):
                                     check = False
                                     self.session = 'FAIL'
                                     self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username} >> đã bú: {formatted_xu}'})
@@ -1769,7 +1814,7 @@ class threadToolTds(QThread):
                                         with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
                                             file.write(f"{self.row}|{gmail}|{username}|{formatted_xu}\n")
                                     break
-
+                                
                                 # close qc
                                 self.event = Event()
                                 Thread(target=self.closeQcTiktok2).start()
@@ -1784,26 +1829,14 @@ class threadToolTds(QThread):
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     sleep(1)
 
-                                # Duyệt Job
-                                self.dict_data.update({'code': 100, 'status': 'Đang check cache job'})
-                                self.sendDataUpMainScreen.emit(self.dict_data)
-                                if type_get_job == 'tiktok_follow':
-                                    cache_job = 'TIKTOK_FOLLOW_CACHE'
-                                elif type_get_job == 'tiktok_like':
-                                    cache_job = 'TIKTOK_LIKE_CACHE'
-
-                                response = self.tds.checkCacheJob(cache_job, idjob, prx)
-                                if response == False: continue # check cache lỗi 
-                                cache = response['cache']
-                                # self.data_like.update({'cache': cache})
-
-                                # gửi tín hiệu dừng tương tác
                                 self.event.set()
                                 my_thread.join() # đợi luồng nhận được tín hiệu và dừng lại 
-
-                            self.dict_data.update({'code': 100, 'cache': cache, 'status': f'Đã hoàn thành {cache} nhiệm vụ {type_get_job}.'})
+                            
+                            self.dict_data.update({'code': 100, 'cache': self.cache, 'status': f'Đã hoàn thành {self.cache} nhiệm vụ {type_get_job}.'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
-                            if cache >= 13: # 13 job nhận xu 1 lần
+                            print(self.cache, getCurrentTime()['time'])
+
+                            if self.cache >= 13: # 13 job nhận xu 1 lần
                                 try:
                                     self.dict_data.update({'code': 100, 'status': f'Đang nhận xu'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1812,7 +1845,7 @@ class threadToolTds(QThread):
                                     elif type_get_job == 'tiktok_like':
                                         type_api = 'TIKTOK_LIKE&id=TIKTOK_LIKE_API' 
                                         
-                                    response1 = self.tds.submitJobFollow(type_api, prx)
+                                    response1 = self.tds.submitJobFollow(type_api)
                                     print(self.row, response1)
                                     if response1 == False: continue
 
@@ -1857,13 +1890,13 @@ class threadToolTds(QThread):
                                         nhanxuloi = 0
 
                                         changeAcc = False
-                                        if int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_0'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_0'].replace(',', ''))+200000:
+                                        if int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_0'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_0'].replace(',', ''))+100000:
                                             changeAcc = True
-                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_1'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_1'].replace(',', ''))+200000:
+                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_1'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_1'].replace(',', ''))+100000:
                                             changeAcc = True
-                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_2'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_2'].replace(',', ''))+200000:
+                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_2'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_2'].replace(',', ''))+100000:
                                             changeAcc = True
-                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_3'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_3'].replace(',', ''))+200000:
+                                        elif int(xu_total.replace(',', '')) >= int(self.limitXu['limit_xu_3'].replace(',', '')) and int(xu_total.replace(',', '')) <= int(self.limitXu['limit_xu_3'].replace(',', ''))+100000:
                                             changeAcc = True
 
                                         # change account 
@@ -1934,6 +1967,12 @@ class threadToolTds(QThread):
                     file.write(f"Thread: {self.row} : {tb}\n\n")
             sleep(5)
 
+    def checkCacheTds(self, idjob):
+        check_cache = self.tds.checkCacheJob('TIKTOK_FOLLOW_CACHE', idjob)
+        print(check_cache)
+        if check_cache == False: return self.checkCacheTds(idjob) # check cache lỗi 
+        self.cache = check_cache['cache']
+
     def publicProfile(self):
         self.adb.find_image('img\\3gach.png', 5, row=self.row)
         self.adb.find_image('img\\setting8.png', 5, row=self.row)
@@ -1948,6 +1987,7 @@ class threadToolTds(QThread):
     def bypassCaptchaNumber(self):
         self.adb.find_image('img\\startcaptcha.png', 2, row=self.row)
         sleep(3)
+
         self.adb.find_image('img\\1.png', 2, row=self.row)
         self.adb.find_image('img\\2.png', 2, row=self.row)
         self.adb.find_image('img\\3.png', 2, row=self.row)
@@ -1989,6 +2029,7 @@ class threadToolTds(QThread):
                 break
             sleep(1)
     def interactTiktok(self):
+        self.adb.runShell("input keyevent 4")
         while not self.event.is_set():
             self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
             self.interruptible_sleep(random.randint(2, 4), self.event)
@@ -2005,15 +2046,15 @@ class threadToolTds(QThread):
                 sleep(2)
 
             # follow default tiktok 
-            if random.randint(0, 1) == 1 and self.follow_me == False:
-                link_follow = 'snssdk1180://user/profile/danh.ng28'
-                self.adb.runShell(f"am start -a android.intent.action.VIEW -d {link_follow}")
-                self.adb.runShell("settings put system accelerometer_rotation 0")
-                sleep(random.randint(2, 4))
-                self.adb.find_image('img\\follow8.png', 10, row=self.row)
-                self.adb.runShell("input keyevent 4")
-                self.follow_me = True
-                sleep(2)
+            # if self.follow_me == False:
+            #     link_follow = 'snssdk1180://user/profile/danh.ng28'
+            #     self.adb.runShell(f"am start -a android.intent.action.VIEW -d {link_follow}")
+            #     self.adb.runShell("settings put system accelerometer_rotation 0")
+            #     sleep(random.randint(2, 4))
+            #     self.adb.find_image('img\\follow8.png', 5, row=self.row)
+            #     self.adb.runShell("input keyevent 4")
+            #     self.follow_me = True
+            #     sleep(2)
             # end follow
 
             self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
@@ -2135,7 +2176,7 @@ class threadToolTds(QThread):
         self.dict_data.update({'code': 100, 'status': f'Đợi tiktok xác minh gmail.'})
         self.sendDataUpMainScreen.emit(self.dict_data)
         for _ in range(10):
-            print(_)
+            # print(_)
             if self.adb.checkXml(CountRepeat=5, element='//node[@text="Ngày sinh"]'):
                 self.dict_data.update({'code': 100, 'status': f'Chọn ngày sinh'})
                 self.sendDataUpMainScreen.emit(self.dict_data)
@@ -2157,15 +2198,18 @@ class threadToolTds(QThread):
                         if self.adb.checkXml(CountRepeat=1, element='//node[@text="Xác nhận"]'):
                             c += 1
                             sleep(5)
-                        elif self.adb.checkXml(CountRepeat=2, element='//node[@text="Tài khoản công khai"]') or self.adb.checkXml(CountRepeat=2, element='//node[@text="OK"]'):
+                        elif self.adb.checkXml(CountRepeat=2, element='//node[@text="Tài khoản công khai"]') or self.adb.checkXml(CountRepeat=2, click=False, element='//node[@text="OK"]'):
+                            if self.adb.find_image('img\\blockreg.png', 3, threshold=0.7, row=self.row):
+                                return 'block_reg'
                             self.dict_data.update({'code': 100, 'status': f'Chỉnh sửa quyền riêng tư.'})
-                            self.sendDataUpMainScreen.emit(self.dict_data) 
+                            self.sendDataUpMainScreen.emit(self.dict_data)
+                            self.adb.checkXml(CountRepeat=1, element='//node[@text="OK"]')
                             self.adb.checkXml(CountRepeat=5, element='//node[@text="Chọn “Tài khoản công khai”"]')
                             sleep(4)
                             self.adb.checkXml(CountRepeat=3, element='//node[@text="OK"]')
                             sleep(5)
                             self.adb.checkXml(CountRepeat=5, element='//node[@text="Tiếp"]')
-                        elif self.adb.find_image('img\\blockreg.png', 1, threshold=0.8, row=self.row):
+                        elif self.adb.find_image('img\\blockreg.png', 1, threshold=0.7, row=self.row):
                             return 'block_reg'
                         else:
                             if c > 0: return True
@@ -2216,13 +2260,11 @@ class threadToolTds(QThread):
                 return username
         return ''
     def upAvatar(self, folder_avater):
-        self.dict_data.update({'code': 100, 'status': 'Cấp quyền bộ nhớ, di chuyển ảnh random lên máy'})
+        self.dict_data.update({'code': 100, 'status': 'Cấp quyền bộ nhớ, tải ngẫu nhiên 3 ảnh lên máy'})
         self.sendDataUpMainScreen.emit(self.dict_data)
         self.adb.runShell('pm grant com.ss.android.ugc.trill android.permission.WRITE_EXTERNAL_STORAGE')
         # self.adb.runShell('rm -r /sdcard/Pictures/*') # xóa toàn bộ ảnh 
         for _ in range(3):
-            self.dict_data.update({'code': 100, 'status': 'Tải ngẫu nhiên 3 ảnh lên máy'})
-            self.sendDataUpMainScreen.emit(self.dict_data)
             img_name = self.randomPictures(folder_avater)
             self.adb.device.push(folder_avater+'/'+img_name, '/sdcard/Pictures/'+img_name)
             self.adb.runShell('am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/'+img_name) # refresh ảnh vừa up trên android
@@ -2233,14 +2275,40 @@ class threadToolTds(QThread):
 
         self.adb.checkXml(CountRepeat=3,element='//node[@text="Sửa hồ sơ"]')
         sleep(2)
-        check_hs = self.adb.checkXml(CountRepeat=5, element='//node[@text="Thay đổi ảnh"]', Xoffsetplus=100, Yoffsetplus=-100) # hồ sơ mặc định
-        if check_hs == False:
-            self.adb.checkXml(CountRepeat=5, element='//node[@text="Sửa hồ sơ"]', Xoffsetplus=50, Yoffsetplus=300)  # hồ sơ mới 
-            sleep(3) 
-            self.adb.checkXml(CountRepeat=2 ,element='//node[@text="Thay đổi ảnh"]')
-        sleep(3)
-        self.adb.checkXml(CountRepeat=5,element='//node[@text="Chọn từ Thư viện"]')
-        
+        # check_hs = self.adb.checkXml(CountRepeat=5, element='//node[@text="Thay đổi ảnh"]', Xoffsetplus=100, Yoffsetplus=-100) # hồ sơ mặc định
+        # if check_hs == False:
+        #     self.adb.checkXml(CountRepeat=5, element='//node[@text="Sửa hồ sơ"]', Xoffsetplus=50, Yoffsetplus=300)  # hồ sơ mới 
+        #     sleep(3) 
+        #     self.adb.checkXml(CountRepeat=2, element='//node[@text="Thay đổi ảnh"]')
+        # sleep(3)
+        # self.adb.checkXml(CountRepeat=5, element='//node[@text="Chọn từ Thư viện"]')
+
+
+        if self.adb.checkXml(CountRepeat=3 ,element='//node[@text="Thay đổi ảnh"]', Xoffsetplus=100, Yoffsetplus=-100, click=False):
+            self.adb.checkXml(CountRepeat=3,element='//node[@text="Thay đổi ảnh"]', Xoffsetplus=100, Yoffsetplus=-100) 
+            sleep(3)
+            self.adb.checkXml(CountRepeat=5,element='//node[@text="Chọn từ Thư viện"]')
+            sleep(3)
+        else:
+            if self.adb.checkXml(CountRepeat=3 ,element='//node[@text="Sửa hồ sơ"]'):
+                if self.adb.checkXml(CountRepeat=3 ,element='//node[@text="Tạo ảnh đại diện"]', click=False):
+                    self.adb.checkXml(CountRepeat=3 ,element='//node[@text="Sửa hồ sơ"]', Xoffsetplus=100, Yoffsetplus=450)
+                else:
+                    self.adb.checkXml(CountRepeat=3 ,element='//node[@text="Sửa hồ sơ"]', Xoffsetplus=100, Yoffsetplus=200)
+                sleep(2)
+                if self.adb.checkXml(CountRepeat=2 ,element='//node[@text="Thay đổi ảnh"]'):
+                    self.adb.checkXml(CountRepeat=3 ,element='//node[@text="Thay đổi ảnh"]', Xoffsetplus=100, Yoffsetplus=-100)  
+                    sleep(3) 
+                    self.adb.checkXml(CountRepeat=5,element='//node[@text="Chọn từ Thư viện"]')   
+                    sleep(3)     
+                else:
+                    self.adb.checkXml(CountRepeat=5,element='//node[@text="Chọn từ Thư viện"]')   
+                    sleep(3)                 
+
+        if self.adb.checkXml(CountRepeat=3,element='//node[@text="CHO PHÉP"]')or self.adb.checkXml(CountRepeat=3,element='//node[@text="LUÔN CHO PHÉP"]'):
+            sleep(3)
+
+
         # get list image 
         upSuc = False
         for i in range(5):
@@ -2252,8 +2320,9 @@ class threadToolTds(QThread):
                 self.sendDataUpMainScreen.emit(self.dict_data)
                 pos = posList[_]
                 self.adb.clicks(int(pos[0]), int(pos[1]))
-                sleep(2)
-                if self.adb.checkXml(CountRepeat=2, element='//node[@text="OK"]'):
+                sleep(3)
+                if self.adb.checkXml(CountRepeat=3, element='//node[@text="OK"]'):
+                    self.adb.runShell("input keyevent 4")
                     continue
                 black = self.adb.checkColor()
                 if black: break
@@ -2308,9 +2377,9 @@ class threadToolTds(QThread):
     
     def stop(self):
         self.adb.runShell("am force-stop com.ss.android.ugc.trill", check=True) # đóng tiktok
-        self.adb.runShell("input keyevent 3", check=True) # về home
         self.event.set()
         self.event_qc.set()
+        self.adb.runShell("input keyevent 3", check=True) # về home
         self.terminate()
         self.dict_data.update({'code': 100, 'status': 'Đã dừng tool'})
         self.sendDataUpMainScreen.emit(self.dict_data)
