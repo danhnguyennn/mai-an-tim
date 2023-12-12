@@ -27,7 +27,6 @@ from models.adbModels import ADB_TOOL
 from models.mongoServer import MONGO_DB
 from models.captcha import bypassCaptcha
 
-# VERSION = '1.1.1.7'
 
 def Information(content):
     msg = QtWidgets.QMessageBox()
@@ -1704,10 +1703,9 @@ class threadToolTds(QThread):
                 # run tds
                 list_nv = ['tiktok_like', 'tiktok_follow'] # tiktok_comment
                 self.data_follow = {'cache': 0, 'data': []}
-
+                self.cache = 0
                 while check and self.session == 'OK':
-                    # self.tds = API_TDS(self.access_token)
-                    # prx = self.tds.checkProxy() # get proxy
+                    self.tds = API_TDS(self.access_token)
                     for _ in range(20):
                         # type_get_job = random.choices(list_nv, weights=[0.6, 0.4])[0]
                         type_get_job = 'tiktok_follow'
@@ -1722,14 +1720,16 @@ class threadToolTds(QThread):
                                     continue
                                 self.data_follow = response
                             try:
-                                self.cache = self.data_follow['cache']
+                                cache = self.data_follow['cache']
+                                if cache > self.cache:
+                                    self.cache = cache
                                 idjob = self.data_follow['data'][0]['id']
                             except:
                                 print(self.row, "ERR CACHE:", response)
                                 continue
                             
-                            print(getCurrentTime()['time'])
-                            print(self.data_follow)
+                            # print(getCurrentTime()['time'])
+                            # print(self.data_follow)
                             link = self.data_follow['data'][0]['link']
                             if self.cache < 14:
                                 if type_get_job == 'tiktok_follow':
@@ -1798,22 +1798,23 @@ class threadToolTds(QThread):
                                 self.data_follow['data'].pop(0)
                             
                                 if self.adb.find_image('img\\captcha8.png', 1, row=self.row):
-                                    self.dict_data.update({'code': 100, 'status': 'Đang giải captcha ...'})
+                                    self.dict_data.update({'code': 100, 'status': 'Đang giải captcha số ...'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     self.bypassCaptchaNumber()
-                                if self.adb.find_image('img\\vohieuhoa.png', 1, threshold=0.7, row=self.row):
-                                    check = False
-                                    self.session = 'FAIL'
-                                    self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username} >> đã bú: {formatted_xu}'})
-                                    self.sendDataUpMainScreen.emit(self.dict_data)
-                                    sleep(1)
-                                    if self.getMail == 'file':
-                                        with open(f'data\\mail\\stream\\{self.folder}\\acc.txt', 'a+', encoding='utf-8') as file:
-                                            file.write(f"{gmail}|{username}|{formatted_xu}\n")
-                                    else:
-                                        with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
-                                            file.write(f"{self.row}|{gmail}|{username}|{formatted_xu}\n")
-                                    break
+                                
+                                # if self.adb.find_image('img\\vohieuhoa.png', 1, threshold=0.7, row=self.row):
+                                #     check = False
+                                #     self.session = 'FAIL'
+                                #     self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username} >> đã bú: {formatted_xu}'})
+                                #     self.sendDataUpMainScreen.emit(self.dict_data)
+                                #     sleep(1)
+                                #     if self.getMail == 'file':
+                                #         with open(f'data\\mail\\stream\\{self.folder}\\acc.txt', 'a+', encoding='utf-8') as file:
+                                #             file.write(f"{gmail}|{username}|{formatted_xu}\n")
+                                #     else:
+                                #         with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
+                                #             file.write(f"{self.row}|{gmail}|{username}|{formatted_xu}\n")
+                                #     break
                                 
                                 # close qc
                                 self.event = Event()
@@ -1831,10 +1832,20 @@ class threadToolTds(QThread):
 
                                 self.event.set()
                                 my_thread.join() # đợi luồng nhận được tín hiệu và dừng lại 
-                            
+                            else:
+                                check_tiktok = self.checkUserTiktok(username)
+                                try:
+                                    check_tiktok.split('following-count">')[1].split('<')[0]
+                                except:
+                                    check = False
+                                    self.session = 'FAIL'
+                                    self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username}'})
+                                    self.sendDataUpMainScreen.emit(self.dict_data)
+                                    sleep(1)
+                                    break
                             self.dict_data.update({'code': 100, 'cache': self.cache, 'status': f'Đã hoàn thành {self.cache} nhiệm vụ {type_get_job}.'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
-                            print(self.cache, getCurrentTime()['time'])
+                            # print(self.cache, getCurrentTime()['time'])
 
                             if self.cache >= 13: # 13 job nhận xu 1 lần
                                 try:
@@ -1969,10 +1980,9 @@ class threadToolTds(QThread):
 
     def checkCacheTds(self, idjob):
         check_cache = self.tds.checkCacheJob('TIKTOK_FOLLOW_CACHE', idjob)
-        print(check_cache)
+        # print(check_cache)
         if check_cache == False: return self.checkCacheTds(idjob) # check cache lỗi 
         self.cache = check_cache['cache']
-
     def publicProfile(self):
         self.adb.find_image('img\\3gach.png', 5, row=self.row)
         self.adb.find_image('img\\setting8.png', 5, row=self.row)
@@ -1987,11 +1997,10 @@ class threadToolTds(QThread):
     def bypassCaptchaNumber(self):
         self.adb.find_image('img\\startcaptcha.png', 2, row=self.row)
         sleep(3)
-
-        self.adb.find_image('img\\1.png', 2, row=self.row)
-        self.adb.find_image('img\\2.png', 2, row=self.row)
-        self.adb.find_image('img\\3.png', 2, row=self.row)
-        self.adb.find_image('img\\4.png', 2, row=self.row)
+        self.adb.clicks(193, 1363)
+        self.adb.clicks(540, 1363)
+        self.adb.clicks(900, 1363)
+        self.adb.clicks(193, 1500)
         self.adb.find_image('img\\quaylaitiktok.png', 5, row=self.row)
     def closeQcTiktok2(self):
         if '5200' in self.phone_device:
@@ -2372,14 +2381,39 @@ class threadToolTds(QThread):
             return "NO_PATH_IMAGE"
         image = random.choice(os.listdir(folderavt))
         return image
+    def checkUserTiktok(self, username):
+        headers = {
+            'authority': 'www.tiktok.com',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-language': 'en-US,en;q=0.9',
+            'sec-ch-ua': '"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'none',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win32; x86) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+        }
+        proxy_check = self.tds.getProxy()
+        for i in range(3):
+            try:
+                response = requests.get(f'https://www.tiktok.com/@{username}', headers=headers, proxies=proxy_check, timeout=10).text
+                return response
+            except: 
+                proxy_check = self.tds.getProxy()
+                sleep(2)
+        return False
+
     def publicTym(self):
         pass
     
     def stop(self):
         self.adb.runShell("am force-stop com.ss.android.ugc.trill", check=True) # đóng tiktok
+        self.adb.runShell("input keyevent 3", check=True) # về home
         self.event.set()
         self.event_qc.set()
-        self.adb.runShell("input keyevent 3", check=True) # về home
         self.terminate()
         self.dict_data.update({'code': 100, 'status': 'Đã dừng tool'})
         self.sendDataUpMainScreen.emit(self.dict_data)
