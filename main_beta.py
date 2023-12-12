@@ -1802,20 +1802,6 @@ class threadToolTds(QThread):
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     self.bypassCaptchaNumber()
                                 
-                                # if self.adb.find_image('img\\vohieuhoa.png', 1, threshold=0.7, row=self.row):
-                                #     check = False
-                                #     self.session = 'FAIL'
-                                #     self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username} >> đã bú: {formatted_xu}'})
-                                #     self.sendDataUpMainScreen.emit(self.dict_data)
-                                #     sleep(1)
-                                #     if self.getMail == 'file':
-                                #         with open(f'data\\mail\\stream\\{self.folder}\\acc.txt', 'a+', encoding='utf-8') as file:
-                                #             file.write(f"{gmail}|{username}|{formatted_xu}\n")
-                                #     else:
-                                #         with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
-                                #             file.write(f"{self.row}|{gmail}|{username}|{formatted_xu}\n")
-                                #     break
-                                
                                 # close qc
                                 self.event = Event()
                                 Thread(target=self.closeQcTiktok2).start()
@@ -1834,15 +1820,20 @@ class threadToolTds(QThread):
                                 my_thread.join() # đợi luồng nhận được tín hiệu và dừng lại 
                             else:
                                 check_tiktok = self.checkUserTiktok(username)
-                                try:
-                                    check_tiktok.split('following-count">')[1].split('<')[0]
-                                except:
+                                if username not in check_tiktok:
                                     check = False
                                     self.session = 'FAIL'
                                     self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username}'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     sleep(1)
+                                    if self.getMail == 'file':
+                                        with open(f'data\\mail\\stream\\{self.folder}\\acc.txt', 'a+', encoding='utf-8') as file:
+                                            file.write(f"{gmail}|{username}|{xumotacc}|DIE\n")
+                                    else:
+                                        with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
+                                            file.write(f"{self.row}|{gmail}|{username}|{xumotacc}|DIE\n")
                                     break
+                                
                             self.dict_data.update({'code': 100, 'cache': self.cache, 'status': f'Đã hoàn thành {self.cache} nhiệm vụ {type_get_job}.'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             # print(self.cache, getCurrentTime()['time'])
@@ -2397,10 +2388,13 @@ class threadToolTds(QThread):
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win32; x86) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
         }
         proxy_check = self.tds.getProxy()
-        for i in range(3):
+        count_check = 0
+        for i in range(5):
             try:
                 response = requests.get(f'https://www.tiktok.com/@{username}', headers=headers, proxies=proxy_check, timeout=10).text
-                return response
+                count_check += 1
+                if count_check >= 2:
+                    return response
             except: 
                 proxy_check = self.tds.getProxy()
                 sleep(2)
