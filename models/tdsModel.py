@@ -10,6 +10,7 @@ class API_TDS:
         self.ss = requests.Session()
         self.access_token = access_token
         self.check_proxy = 0
+        
     def getProxy(self):
         if self.check_proxy >= 10:
             return {}
@@ -94,7 +95,6 @@ class API_TDS:
         for i in range(5):
             try:
                 response = requests.get(f"https://traodoisub.com/api/?fields={type_job}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
-                print(response)
                 if 'Thao tác quá nhanh' in str(response):
                     return False
                 elif response['data'] == []:
@@ -122,8 +122,6 @@ class API_TDS:
         for i in range(5):
             try:
                 response = requests.get(f"https://traodoisub.com/api/coin/?type={type_api}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
-                # if response['code'] == 'error':
-                #     return False
                 return response
             except Exception as e:
                 s = repr(e)

@@ -42,8 +42,8 @@ class MONGO_DB:
                 },
                 'interactSleepAcc': True,
                 'interactSleepJob': True,
-                'timeStart': '00:00',
-                'timeEnd': '24:00',
+                'timeStart': '00:00:00',
+                'timeEnd': '00:00:00',
                 'sleepStopAcc': 0,
                 'limitStopAcc': 100,
                 'sleepStopJob': 0,
@@ -129,8 +129,8 @@ class MONGO_DB:
             'limitStopJob': 500,
             'userShopMail': '',
             'pwdShopMail': '',
-            'timeStart': '12:00 AM',
-            'timeEnd': '12:00 AM',
+            'timeStart': '00:00:00',
+            'timeEnd': '00:00:00',
             }}
         self.settingTds.update_many(update_criteria, update_data)
 

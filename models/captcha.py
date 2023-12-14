@@ -1,7 +1,8 @@
 from onest_captcha import OneStCaptchaClient
 import requests
 from time import sleep
-import asyncio
+
+from models.proxyModel import GenProxy
 
 def stCaptcha(APIKEY):
     for i in range(2):
@@ -59,6 +60,7 @@ def captcha69(APIKEY):
 
 def capMonsterCloud(APIKEY):
     for _ in range(2):
+        proxie = GenProxy().getProxy()
         try:
             data = {
                 "clientKey": APIKEY,
@@ -69,7 +71,7 @@ def capMonsterCloud(APIKEY):
                     "websiteKey":"6LeGw7IZAAAAAECJDwOUXcriH8HNN7_rkJRZYF8a"
                 }
             }
-            create_task = requests.post('https://api.capmonster.cloud/createTask', json=data).json()
+            create_task = requests.post('https://api.capmonster.cloud/createTask', json=data, proxies=proxie, timeout=10).json()
             # print(create_task)
             errorId = create_task['errorId']
             if errorId == 0:
@@ -79,7 +81,7 @@ def capMonsterCloud(APIKEY):
                     "taskId": taskId
                 }
                 for _ in range(100):
-                    result = requests.post('https://api.capmonster.cloud/getTaskResult/', json=data_task).json()
+                    result = requests.post('https://api.capmonster.cloud/getTaskResult/', json=data_task, proxies=proxie, timeout=10).json()
                     # print(result)
                     status = result['status']
                     if status == 'ready':
