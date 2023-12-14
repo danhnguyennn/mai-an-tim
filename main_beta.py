@@ -452,6 +452,11 @@ class MainWindow(QMainWindow):
         # limit job + acc
         self.uic.job_sleep.setValue(int(self.limitStopAcc))
         self.uic.job_sleep_2.setValue(int(self.limitStopJob))
+
+        # print(self.timeStart)
+        # self.uic.startTime.setTimeRange(QTime(self.timeStart))
+        # self.uic.startTime.setDisplayFormat('hh:mm:ss')
+        # self.uic.endTime.setTime(self.timeEnd)
         
         # self.uic.startTime.
     # extension
@@ -1130,6 +1135,7 @@ class threadToolTds(QThread):
         self.keyShop        = dataWindow['setting']['keyShop']
         # key captcha
         self.apikey1st      = dataWindow['setting']['apikey1st']
+        self.site_cap       = 'cloud_cap'
         # delay
         self.dlMin          = dataWindow['setting']['dlMin']
         self.dlMax          = dataWindow['setting']['dlMax']
@@ -1188,7 +1194,7 @@ class threadToolTds(QThread):
             self.sendDataUpMainScreen.emit(self.dict_data)
             self.usertds = randStr(8)+str(random.randint(100, 999))
             self.pwdtds  = randStr(8)
-            g_captcha_result = bypassCaptcha(self.apikey1st)
+            g_captcha_result = bypassCaptcha(self.apikey1st, self.site_cap)
             new_username = self.tds.regTds(g_captcha_result, self.usertds, self.pwdtds)
             if new_username == False:
                 self.dict_data.update({'code': 204, 'status': 'Đăng ký tài khoản thất bại'})
@@ -1247,22 +1253,22 @@ class threadToolTds(QThread):
                         return self.sendDataUpMainScreen.emit(self.dict_data)
 
                 # check time sleep
-                if self.timeStart == '12:00 AM' and self.timeEnd == '12:00 AM':
-                    t1 = '00:00'
-                    t2 = '24:00'
-                else:
-                    t_start = datetime.strptime(self.timeStart, '%I:%M %p')
-                    t_end   = datetime.strptime(self.timeEnd, '%I:%M %p')
-                    t1   = t_start.strftime('%H:%M')
-                    t2   = t_end.strftime('%H:%M')
+                # if self.timeStart == '12:00 AM' and self.timeEnd == '12:00 AM':
+                #     t1 = '00:00'
+                #     t2 = '24:00'
+                # else:
+                #     t_start = datetime.strptime(self.timeStart, '%I:%M %p')
+                #     t_end   = datetime.strptime(self.timeEnd, '%I:%M %p')
+                #     t1   = t_start.strftime('%H:%M')
+                #     t2   = t_end.strftime('%H:%M')
 
-                now = datetime.now()
-                current_time = now.strftime("%H:%M")
-                if current_time < t1 or current_time >= t2:
-                    self.dict_data.update({'code': 100, 'status': f'[{current_time}] : đang trong thời gian nghỉ'})
-                    self.sendDataUpMainScreen.emit(self.dict_data)
-                    sleep(30)
-                    continue
+                # now = datetime.now()
+                # current_time = now.strftime("%H:%M")
+                # if current_time < t1 or current_time >= t2:
+                #     self.dict_data.update({'code': 100, 'status': f'[{current_time}] : đang trong thời gian nghỉ'})
+                #     self.sendDataUpMainScreen.emit(self.dict_data)
+                #     sleep(30)
+                #     continue
 
                 # start thread tool
                 self.follow_me = False
@@ -1655,10 +1661,10 @@ class threadToolTds(QThread):
                                         self.adb.runShell("input keyevent 4")
                                     else: break
                                 if username != False and len(username) > 4:
-                                    for _ in range(10):
+                                    for _ in range(5):
                                         self.dict_data.update({'code': 100, 'status': f'[{_}] : Đang cấu hình username: {username}'})
                                         self.sendDataUpMainScreen.emit(self.dict_data)
-                                        g_captcha_result = bypassCaptcha(self.apikey1st)
+                                        g_captcha_result = bypassCaptcha(self.apikey1st, self.site_cap)
                                         if g_captcha_result == False:
                                             self.dict_data.update({'code': 100, 'status': f'Giải captcha thất bại.'})
                                             self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1666,7 +1672,10 @@ class threadToolTds(QThread):
                                         add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
                                         if add != False: 
                                             break
-                                            
+                                        self.dict_data.update({'code': 100, 'status': f'Chờ 60s cấu hình la'})
+                                        self.sendDataUpMainScreen.emit(self.dict_data)
+                                        sleep(60)
+
                                     if add == True:
                                         check = True
                                         self.dict_data.update({'code': 200, 'user_tiktok': username, 'status': f'Cấu hình thành công: {username}'})
@@ -1819,6 +1828,8 @@ class threadToolTds(QThread):
                                 self.event.set()
                                 my_thread.join() # đợi luồng nhận được tín hiệu và dừng lại 
                             else:
+                                self.dict_data.update({'code': 100, 'status': f'Check live account tiktok.'})
+                                self.sendDataUpMainScreen.emit(self.dict_data)
                                 check_tiktok = self.checkUserTiktok(username)
                                 if username not in check_tiktok:
                                     check = False
@@ -1908,7 +1919,7 @@ class threadToolTds(QThread):
                                             for _ in range(5):
                                                 self.usertds = randStr(8)+str(random.randint(100, 999))
                                                 self.pwdtds  = randStr(8)
-                                                g_captcha_result = bypassCaptcha(self.apikey1st)
+                                                g_captcha_result = bypassCaptcha(self.apikey1st, self.site_cap)
                                                 new_username = self.tds.regTds(g_captcha_result, self.usertds, self.pwdtds)
                                                 if new_username == False:
                                                     continue
@@ -1931,7 +1942,7 @@ class threadToolTds(QThread):
                                                     self.dict_data.update({'code': 100, 'status': f'Chờ {t} giây để cấu hình sau khi đổi acc'})
                                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                                     sleep(1)
-                                                g_captcha_result = bypassCaptcha(self.apikey1st)
+                                                g_captcha_result = bypassCaptcha(self.apikey1st, self.site_cap)
                                                 add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
                                                 print(add)
                                                 if add: break
