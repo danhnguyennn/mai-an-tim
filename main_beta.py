@@ -1177,6 +1177,33 @@ class threadToolTds(QThread):
         self.adb = ADB_TOOL(self.phone_device)
         del dataWindow
     
+    def reloadSetting(self):
+        self.getMail        = dataWindow['setting']['getMail']
+        self.apiKeyTaphoa   = dataWindow['setting']['apiKeyTaphoa']
+        self.user_shop1989  = dataWindow['setting']['userShopMail']
+        self.pwd_shop1989   = dataWindow['setting']['pwdShopMail']
+        self.keyShop        = dataWindow['setting']['keyShop']
+        # key captcha
+        self.apikey1st      = dataWindow['setting']['apikey1st']
+        self.site_cap       = 'cloud_cap'
+        # delay
+        self.dlMin          = dataWindow['setting']['dlMin']
+        self.dlMax          = dataWindow['setting']['dlMax']
+        self.sleepStopAcc   = dataWindow['setting']['sleepStopAcc']
+        self.sleepStopJob   = dataWindow['setting']['sleepStopJob']
+        # path image
+        self.folder_image   = dataWindow['setting']['path_image']
+        self.interactSleepAcc = dataWindow['setting']['interactSleepAcc']
+        self.interactSleepJob = dataWindow['setting']['interactSleepJob']
+
+        self.timeStart      = dataWindow['setting']['timeStart']      
+        self.timeEnd        = dataWindow['setting']['timeEnd']
+        
+        self.limitXu        = dataWindow['setting']['limitXu']
+        # limit acc + job 
+        self.limitStopAcc   = dataWindow['setting']['limitStopAcc']
+        self.limitStopJob   = dataWindow['setting']['limitStopJob']
+
     def run(self):
         self.dict_data.update({'code': 100, 'status': 'Đang bắt đầu chạy.'})
         self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1476,17 +1503,18 @@ class threadToolTds(QThread):
                     self.adb.runShell("settings put system accelerometer_rotation 0")
                     sleep(10)
                     # if self.adb.find_image('img\\boqua.png', 10, click=False, row=self.row) == False:
-                    if self.adb.checkXml(CountRepeat=5, element='//node[@text="Bỏ qua"]', click=False) == False:
+                    if self.adb.checkXml(CountRepeat=5, element='//node[@text="Bỏ qua"]', click=False) == False :
                         self.adb.clicks(550, 1210, 1)
                         sleep(2)
                         self.adb.clicks(530, 1111, 1)
-                    self.adb.checkXml(CountRepeat=5, element='//node[@text="Bỏ qua"]')
+                    if self.adb.checkXml(CountRepeat=5, element='//node[@text="Bỏ qua"]') == False:
+                        self.adb.checkXml(CountRepeat=5, element='//node[@text="Để sau"]')
                     sleep(5)
                     self.adb.runShell("input swipe 224 1435 143 285 100")
 
                     # vô trang chủ
                     ngaysinh = True
-                    for _ in range(8):
+                    for _ in range(4):
                         self.adb.runShell("monkey -p com.ss.android.ugc.trill -c android.intent.category.LAUNCHER 1")
                         self.adb.runShell("settings put system accelerometer_rotation 0")
                         sleep(7)
@@ -1503,6 +1531,8 @@ class threadToolTds(QThread):
                             sleep(3)
                             self.adb.runShell("input keyevent 4")
                             self.adb.find_image('img\\closequa8.png', 1, threshold=0.7, row=self.row)
+                            self.adb.find_image('img\\thuong.png', 1, threshold=0.7, row=self.row)
+                            self.adb.find_image('img\\thuong1.png', 5,threshold=0.7, row=self.row)
 
                             if '5200' in self.phone_device:
                                 self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
@@ -1532,10 +1562,11 @@ class threadToolTds(QThread):
                         if self.adb.checkXml(CountRepeat=5,element='//node[@text="Chuyển đổi tài khoản"]'):                                           
                             sleep(3)
                         else:
-                            self.adb.find_image('img\\dangky8.png', 2, row=self.row) # check popup
+                            if self.adb.find_image('img\\dangky8.png', 2, row=self.row) == False: # check popup
+                                self.adb.find_image('img\\dangnhap9.png', 2, row=self.row) # check popup
                         # 
                         sleep(2)
-                        if self.adb.find_image('img\\logingmail.png', 5, click=False, row=self.row) or self.adb.find_image('img\\dangky8.png', 5, row=self.row): # check popup
+                        if self.adb.find_image('img\\logingmail.png', 3, click=False, row=self.row) or self.adb.find_image('img\\dangky8.png', 3, row=self.row) or self.adb.find_image('img\\dangnhap9.png', 3, row=self.row): # check popup
                             # vô hồ sơ đăng ký
                             reg = self.registerTiktok()
                             if reg == 'block_reg':
@@ -1567,21 +1598,23 @@ class threadToolTds(QThread):
                             upload = True
                             break
                     else:
-                        # nếu hết 8 lần mà không tìm đc logo tiktok thì quay lại login gmail khác
+                        # nếu hết 4 lần mà không tìm đc logo tiktok thì quay lại login gmail khác
                         ngaysinh = False
                         self.session = 'FAIL'
                         self.dict_data.update({'code': 200, 'session': self.session, 'status': f'Đăng ký tiktok thất bại'})
                         self.sendDataUpMainScreen.emit(self.dict_data)
                         continue
 
-                self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row)
-                self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
+                if '5200' in self.phone_device:
+                    self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
+                elif '4200' in self.phone_device:
+                    self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row)
                 # end session False
                 self.dict_data.update({'code': 100, 'status': 'Đang khởi chạy dữ liệu tiktok'})
                 self.sendDataUpMainScreen.emit(self.dict_data)
                 check = False
                 if self.session == 'OK':
-                    for _ in range(10):
+                    for _ in range(4):
                         self.adb.runShell("monkey -p com.ss.android.ugc.trill -c android.intent.category.LAUNCHER 1")
                         sleep(7)
                         # tắt các hiển thị quảng cáo
@@ -1590,8 +1623,8 @@ class threadToolTds(QThread):
                         thread_qc.start()
 
                         sleep(2)
-                        for _ in range(50):
-                            self.dict_data.update({'code': 100, 'status': 'Tiến hành vào hồ sơ cá nhân'})
+                        for _ in range(15):
+                            self.dict_data.update({'code': 100, 'status': f'[{_}] : Tiến hành vào hồ sơ cá nhân'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             self.adb.clicks(969, 1848, 1) # Hồ Sơ
                             if self.adb.find_image('img\\hs.png', 1, click=False, threshold=0.7, row=self.row) or self.adb.find_image('img\\tim.png', 1, click=False, row=self.row):
@@ -1605,11 +1638,11 @@ class threadToolTds(QThread):
                         self.adb.runShell("input swipe 588 300 577 1600 100") # vuốt lên đầu
                         if self.adb.find_image('img\\tim.png', 1, click=False, row=self.row) or self.adb.find_image('img\\hs.png', 1, threshold=0.7, click=False, row=self.row):
                             for i in range(5):
-                                if self.adb.find_image('img\\tkriengtu8.png', 5, threshold=0.6, click=False, row=self.row):
+                                if self.adb.find_image('img\\tkriengtu8.png', 3, threshold=0.7, click=False, row=self.row) or self.adb.find_image('img\\tkriengtu9.png', 3, threshold=0.7, click=False, row=self.row):
                                     self.dict_data.update({'code': 100, 'status': 'Chỉnh sửa quyền riêng tư cá nhân'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     self.publicProfile()
-                                elif self.adb.find_image('img\\dangky8.png', 5, row=self.row):
+                                elif self.adb.find_image('img\\dangky8.png', 5, row=self.row) or self.adb.find_image('img\\dangnhap9.png', 5, row=self.row):
                                     try_reg = self.registerTiktok()
                                     if try_reg == 'block_reg':
                                         self.dict_data.update({'code': 204, 'status': 'Máy lỏ bị chặn reg tài khoản.'})
@@ -1672,7 +1705,7 @@ class threadToolTds(QThread):
                                         add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
                                         if add != False: 
                                             break
-                                        self.dict_data.update({'code': 100, 'status': f'Chờ 60s cấu hình la'})
+                                        self.dict_data.update({'code': 100, 'status': f'Chờ 60s cấu hình lại'})
                                         self.sendDataUpMainScreen.emit(self.dict_data)
                                         sleep(60)
 
@@ -1860,6 +1893,9 @@ class threadToolTds(QThread):
                                         
                                     response1 = self.tds.submitJobFollow(type_api)
                                     print(self.row, response1)
+                                    if 'Vui lòng làm thêm' in response:
+                                        self.cache = response1['cache']
+                                        continue
                                     if response1 == False: continue
 
                                     if response1['data']['job_success'] <= 2:
@@ -1886,6 +1922,7 @@ class threadToolTds(QThread):
                                                 file.write(f"{self.row}|{gmail}|{username}|{formatted_xu}\n")
                                         break
                                     else:
+                                        self.cache = 0
                                         xu_them = response1['data']['xu_them']
                                         total_xu_them += xu_them
                                         xumotacc += xu_them
@@ -1893,7 +1930,7 @@ class threadToolTds(QThread):
                                         xu_total = str('{:,}'.format(int(response1["data"]["xu"])))
                                         self.dict_data.update({
                                             'code': 200, 
-                                            'cache': '0',
+                                            'cache': self.cache,
                                             'xu': xu_total, 
                                             'xuhnay': str(formatted_number), 
                                             'status': f'{type_get_job}: username: {username} nhận thành công: {response1["data"]["msg"]}'
@@ -2021,6 +2058,8 @@ class threadToolTds(QThread):
             sleep(3)
             if self.event_qc.is_set(): break
             self.adb.find_image('img\\closequa8.png', 1, threshold=0.7, row=self.row)
+            self.adb.find_image('img\\thuong.png', 1, threshold=0.7, row=self.row)
+            self.adb.find_image('img\\thuong1.png', 5,threshold=0.7, row=self.row)
 
             if '5200' in self.phone_device:
                 self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
@@ -2186,7 +2225,7 @@ class threadToolTds(QThread):
 
         self.dict_data.update({'code': 100, 'status': f'Đợi tiktok xác minh gmail.'})
         self.sendDataUpMainScreen.emit(self.dict_data)
-        for _ in range(10):
+        for _ in range(4):
             # print(_)
             if self.adb.checkXml(CountRepeat=5, element='//node[@text="Ngày sinh"]'):
                 self.dict_data.update({'code': 100, 'status': f'Chọn ngày sinh'})
@@ -2200,6 +2239,10 @@ class threadToolTds(QThread):
 
                 if self.adb.checkXml(element='//node[@text="Tiếp"]'):
                     sleep(7)
+                    if self.adb.checkXml(CountRepeat=10, element='//node[@text="Đồng ý với tất cả"]', Xoffsetplus=-60, Yoffsetplus=30):
+                        sleep(2)
+                        self.adb.checkXml(CountRepeat=5, element='//node[@text="Tiếp"]')
+                        sleep(5)
                     if self.adb.find_image('img\\blockreg.png', 5, threshold=0.8, row=self.row):
                         return 'block_reg'
                     self.dict_data.update({'code': 100, 'status': f'Xác nhận tên tiktok.'})
@@ -2210,7 +2253,7 @@ class threadToolTds(QThread):
                             c += 1
                             sleep(5)
                         elif self.adb.checkXml(CountRepeat=2, element='//node[@text="Tài khoản công khai"]') or self.adb.checkXml(CountRepeat=2, click=False, element='//node[@text="OK"]'):
-                            if self.adb.find_image('img\\blockreg.png', 3, threshold=0.7, row=self.row):
+                            if self.adb.find_image('img\\blockreg.png', 3, threshold=0.6, row=self.row):
                                 return 'block_reg'
                             self.dict_data.update({'code': 100, 'status': f'Chỉnh sửa quyền riêng tư.'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
@@ -2228,14 +2271,16 @@ class threadToolTds(QThread):
                     sleep(3)
                     self.adb.runShell("input keyevent 4")
                     sleep(3)
-                    self.adb.find_image('img\\dangky8.png', 5, row=self.row)
+                    if self.adb.find_image('img\\dangky8.png', 5, row=self.row):
+                        self.adb.find_image('img\\dangnhap9.png', 5, row=self.row)
                     return self.registerTiktok()
                 else:
                     self.adb.runShell("input keyevent 4")
                     sleep(3)
                     self.adb.runShell("input keyevent 4")
                     sleep(3)
-                    self.adb.find_image('img\\dangky8.png', 5, row=self.row)
+                    if self.adb.find_image('img\\dangky8.png', 5, row=self.row):
+                        self.adb.find_image('img\\dangnhap9.png', 5, row=self.row)
                     return self.registerTiktok()
             elif self.adb.find_image('img\\tieptheo8.png', 5, row=self.row):
                 self.dict_data.update({'code': 100, 'status': f'Xác minh danh tính gmail.'})
