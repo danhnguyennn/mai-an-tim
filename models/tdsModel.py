@@ -64,7 +64,7 @@ class API_TDS:
         }
         try:
             self.ss.post('https://traodoisub.com/scr/login.php', data=data, proxies=proxie, timeout=10)
-            cauhinh = self.ss.get('https://traodoisub.com/view/cauhinh/', proxies=proxie, timeout=10).text
+            cauhinh = self.ss.get('https://traodoisub.com/view/chtiktok/', proxies=proxie, timeout=10).text
             if username not in cauhinh:
                 data = {
                     'idfb': username,
@@ -78,15 +78,15 @@ class API_TDS:
                     return 'defaut_avatar'
                 elif 'tiktok không tồn tại' in str(ch):
                     return 'not_account'
-                for _ in range(5):
-                    try:
-                        response = requests.get(f"https://traodoisub.com/api/?fields=tiktok_run&id={username}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
-                        break
-                    except:
-                        proxie = self.checkProxy()
-                print(username, response)
-                if "uniqueID" in response["data"] and response["data"]["uniqueID"] == username:
-                    return True
+            for _ in range(5):
+                try:
+                    response = requests.get(f"https://traodoisub.com/api/?fields=tiktok_run&id={username}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
+                    break
+                except:
+                    proxie = self.checkProxy()
+            print(username, response)
+            if "uniqueID" in response["data"] and response["data"]["uniqueID"] == username:
+                return True
         except Exception as e:
             print("ERR", e)
             return False

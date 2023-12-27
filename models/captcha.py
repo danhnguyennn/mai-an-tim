@@ -90,6 +90,28 @@ def capMonsterCloud(APIKEY):
                     sleep(3)
         except: pass
 
+def guruCaptcha(APIKEY):
+    for _ in range(2):
+        try:
+            response = requests.post(f'http://api.cap.guru/in.php?key={APIKEY}&method=userrecaptcha&googlekey=6LeGw7IZAAAAAECJDwOUXcriH8HNN7_rkJRZYF8a&pageurl=https://traodoisub.com/view/chtiktok/').text
+            print(response)
+            idJob = response.split('|')[1]
+            json_data = {
+                "key": APIKEY,
+                "action": "get",
+                "id": idJob, 
+                "json": 1
+            }
+            for _ in range(60):
+                result = requests.post('http://api.cap.guru/res.php', json=json_data).json()
+                print(result)
+                status = result['status']
+                if status == 1:
+                    token = result['request']
+                    return token
+                sleep(3)
+        except: pass
+        
 def bypassCaptcha(APIKEY, site='1st'):
     if site == '1st':
         token = stCaptcha(APIKEY)
@@ -99,7 +121,9 @@ def bypassCaptcha(APIKEY, site='1st'):
         token = omoCaptcha(APIKEY)
     elif site == 'cloud_cap':
         token = capMonsterCloud(APIKEY)
+    elif site == 'guru':
+        token = guruCaptcha(APIKEY)
     return token
 
-# g_response = bypassCaptcha('18aae47e60eb2f055986e4af800a2580', 'cloud_cap')
+# g_response = bypassCaptcha('7d3b1901f9ff0dd7b07621840e84f3db', 'guru')
 # print(g_response)

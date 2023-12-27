@@ -39,7 +39,7 @@ class ADB_TOOL:
             self.runShell(f"input tap {click_x} {click_y}")
     def doubleClick(self, click_x, click_y):
         self.runShell(f"input tap {click_x} {click_y} & sleep 0.1; input tap {click_x} {click_y}")
-    def find_image(self, small_image_path, loop=2, click=True, double=False, cord=False, screenshot=True, threshold=0.55, row=''):
+    def find_image(self, small_image_path, loop=2, click=True, double=False, cord=False, screenshot=True, threshold=0.55, row='', print_text=False):
         for i in range(loop):
             try:
                 # Đọc và lấy kích thước ảnh nhỏ
@@ -54,7 +54,8 @@ class ADB_TOOL:
                     # Tìm vị trí tối đa của sự trùng khớp
                     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
                     # Nếu trùng khớp đạt đến một ngưỡng nhất định, vẽ hình chữ nhật
-                    # print(max_val)
+                    if print_text:
+                        print(max_val)
                     if max_val >= threshold:
                         top_left = max_loc
                         bottom_right = (top_left[0] + small_width, top_left[1] + small_height)

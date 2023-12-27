@@ -26,19 +26,32 @@ class MONGO_DB:
             self.accountTds.insert_one(dict_account)
         if "setting" not in table_list:
             dict_setting = {
+                'boxAutoLoad': True,
+                'boxUploadAvt': True,
+                'rebootPhone': False,
+                'searchUser': True,
                 'getMail': 'api', # file # shop
                 'site': 'taphoammo',
                 'apiKeyTaphoa': '',
                 'keyShop': '',
-                'apikey1st': '',
+                'siteCaptcha': 'cloud_cap',
+                'key_captcha': '',
                 'path_image': '',
                 'dlMin': 5,
                 'dlMax': 10,
+                'boxCountJob': 1,
+                'changeAccTds': True,
                 'limitXu': {
                     'limit_xu_0': '10000000',
                     'limit_xu_1': '20000000',
                     'limit_xu_2': '30000000',
                     'limit_xu_3': '40000000',
+                },
+                'acclimit': {
+                    'acc_limit_1': '10',
+                    'acc_limit_2': '10',
+                    'acc_limit_3': '10',
+                    'acc_limit_4': '10',
                 },
                 'interactSleepAcc': True,
                 'interactSleepJob': True,
@@ -49,7 +62,8 @@ class MONGO_DB:
                 'sleepStopJob': 0,
                 'limitStopJob': 500,
                 'userShopMail': '',
-                'pwdShopMail': ''
+                'pwdShopMail': '',
+                'updated_at': ''
             }
             self.settingTds.insert_one(dict_setting)
         if "settingShow" not in table_list:
@@ -111,26 +125,29 @@ class MONGO_DB:
         column_to_remove = 'vpn'
         self.settingTds.update_many({}, {'$unset': {
             "vpn": "",
-            "stopSleep": ""
+            "stopSleep": "",
+            "apikey1st": "",
         }})
     def addColumnSetting(self):
         update_criteria = {}
         update_data = {'$set': {
-            'limitXu': {
-                'limit_xu_0': '10000000',
-                'limit_xu_1': '20000000',
-                'limit_xu_2': '30000000',
-                'limit_xu_3': '40000000',
+            'siteCaptcha': 'cloud_cap',
+            'key_captcha': '',
+            'acclimit': {
+                'acc_limit_1': '10',
+                'acc_limit_2': '10',
+                'acc_limit_3': '10',
+                'acc_limit_4': '10',
             },
-            'sleepStopAcc': 0,
-            'interactSleepAcc': True,
-            'interactSleepJob': True,
-            'sleepStopJob': 0,
-            'limitStopJob': 500,
-            'userShopMail': '',
-            'pwdShopMail': '',
+            'boxAutoLoad': True,
+            'changeAccTds': True,
+            'boxUploadAvt': True,
+            'rebootPhone': False,
+            'boxCountJob': 1,
             'timeStart': '00:00:00',
             'timeEnd': '00:00:00',
+            'searchUser': True,
+            'updated_at': ''
             }}
         self.settingTds.update_many(update_criteria, update_data)
 
