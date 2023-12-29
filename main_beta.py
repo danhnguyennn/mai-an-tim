@@ -184,8 +184,14 @@ class MainWindow(QMainWindow):
         actionUpdate = QAction("Cập nhật dữ liệu", self)
         actionUpdate.setIcon(QIcon('data/display_ui/icons/update.png'))
         
-        actionReset = QAction("Reset session máy", self)
+        actionReset = QMenu("Reset session máy", self)
         actionReset.setIcon(QIcon('data/display_ui/icons/restart.png'))
+
+        actionResetFail = QAction('FAIL', self)
+        actionResetOK = QAction('OK', self)
+
+        actionReset.addAction(actionResetFail)
+        actionReset.addAction(actionResetOK)
 
         # action 8
         actionLoad = QAction("Tải lại danh sách", self)
@@ -205,7 +211,7 @@ class MainWindow(QMainWindow):
         self.menu.addAction(actionChangePwd)
         self.menu.addAction(actionUpdate)
         self.menu.addAction(actionDele)
-        self.menu.addAction(actionReset)
+        self.menu.addMenu(actionReset)
         self.menu.addAction(actionLoad)
 
         # menu con
@@ -214,7 +220,8 @@ class MainWindow(QMainWindow):
         boxCurrent.triggered.connect(self.selectCurrentBox)
         actionCancelBox.triggered.connect(self.unAllCheckbox)
         actionDele.triggered.connect(self.deleAccount)
-        actionReset.triggered.connect(self.resetSession)
+        actionResetFail.triggered.connect(lambda: self.resetSession(0))
+        actionResetOK.triggered.connect(lambda: self.resetSession(1))
         actionLoad.triggered.connect(lambda: self.loadData(True))
         copyDevice.triggered.connect(self.copydevice)
         copyUsername.triggered.connect(self.copyUsertds)
@@ -549,18 +556,25 @@ class MainWindow(QMainWindow):
         self.uic.label_updated_at.setText(self.updated_at)
     
     # extension
-    def resetSession(self):
+    def resetSession(self, type_ss=0):
+        if type_ss == 0:
+            session = 'FAIL'
+        elif type_ss == 1:
+            session = 'OK'
         x = 0
         for row in range(self.uic.tablewidget_page.rowCount()):
             isCheck = self.uic.tablewidget_page.item(row, 0).checkState()
             if isCheck == 2: # 2 check được chọn 0 là chưa được chọn
                 object_id = self.uic.tablewidget_page.item(row, 2).text()
-                self.db.updateOneAccount(object_id, {
-                    'session': 'FAIL',
-                    'user_tiktok': '',
-                    })
-                self.setColorStatusTable(row, 3, 'FAIL')
-                self.setColorStatusTable(row, 7, '')
+                data_update = {
+                    'session': session,
+                }
+                if type_ss == 0:
+                    data_update.update({'user_tiktok': ''})
+                    self.setColorStatusTable(row, 7, '')
+                self.db.updateOneAccount(object_id, data_update)
+                self.setColorStatusTable(row, 3, session)
+                
                 x += 1
         if x == 0:
             return Information("Vui lòng chọn tài khoản cần xóa dữ liệu.")
@@ -1367,14 +1381,7 @@ class threadToolTds(QThread):
         gmail = ''
         break_start_time = ''
         total_xu_them = int(self.xuhnay.replace(',', ''))
-        
-        # get phone name
-        # try:
-        #     self.phone_model = adb.runShell('getprop ro.product.model').strip()
-        # except:
-        #     self.dict_data.update({'code': 204, 'status': 'Không thể kết nối tới máy chủ'})
-        #     return self.sendDataUpMainScreen.emit(self.dict_data)
-
+    
         # check version android
         version_android = self.adb.checkVerisonAndroid()
         if version_android == False:
@@ -1515,14 +1522,6 @@ class threadToolTds(QThread):
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             gmail = self.muaMail()
                         elif self.getMail == 'file': 
-                            # self.mutex.lock() # khóa luồng
-                            # gmail = self.arr_gmail[0].strip()
-                            # self.arr_gmail.pop(0)
-                            # open_file = open(f'data\\mail\\gmail.txt', 'w', encoding='utf-8')
-                            # for mail in self.arr_gmail:
-                            #     open_file.write(mail.strip()+'\n')
-                            # open_file.close()
-                            # self.mutex.unlock() # mở luồng
                             gmail = get_mail_fron_file()
                             if gmail == {}:
                                 self.dict_data.update({'code': 204, 'status': f'Tất cả gmail trong file đã được sử dụng.'})
@@ -1629,14 +1628,16 @@ class threadToolTds(QThread):
                     self.changeVPN(change=True, off=False)
                     sleep(2)
                     
-                    # clear image 
-                    self.adb.runShell('rm -r /sdcard/Pictures/*')  # xóa toàn bộ ảnh 
-                    self.adb.runShell("monkey -p com.sec.android.gallery3d -c android.intent.category.LAUNCHER 1")
-                    sleep(7)
-                    self.adb.runShell('input keyevent KEYCODE_APP_SWITCH')
-                    sleep(1)
-                    if self.adb.checkXml(CountRepeat=2, element='//node[@text="ĐÓNG TẤT CẢ"]') == False:  
-                        self.adb.checkXml(CountRepeat=2, element='//node[@text="Đóng tất cả"]')  
+                    if self.boxUploadAvt == True:
+                        # clear image 
+                        self.adb.runShell('rm -r /sdcard/Pictures/*')  # xóa toàn bộ ảnh 
+                        self.adb.runShell("monkey -p com.sec.android.gallery3d -c android.intent.category.LAUNCHER 1")
+                        sleep(7)
+                        self.adb.runShell('input keyevent KEYCODE_APP_SWITCH')
+                        sleep(1)
+                        if self.adb.checkXml(CountRepeat=2, element='//node[@text="ĐÓNG TẤT CẢ"]') == False:  
+                            self.adb.checkXml(CountRepeat=2, element='//node[@text="Đóng tất cả"]')
+
                     # Mở tiktok
                     self.dict_data.update({'code': 100, 'status': f'Tiến hành mở tiktok'})
                     self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1714,19 +1715,18 @@ class threadToolTds(QThread):
                                 self.dict_data.update({'code': 204, 'status': 'Máy bị chặn reg tài khoản.'})
                                 return self.sendDataUpMainScreen.emit(self.dict_data)
                             elif reg == 'registered':
+                                upload = True
                                 self.session = 'OK'
                                 if self.getMail == 'file':
-                                    with open(f'data\\mail\\stream\\{self.folder}\\gmail_done.txt', "a+", encoding="utf-8") as file:
-                                        file.write(gmail + "\n")
                                     with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
                                         file.write(gmail + "\n")
                                 self.dict_data.update({'code': 200, 'session': self.session, 'status': 'Đăng nhập tiktok thành công'})
                                 self.sendDataUpMainScreen.emit(self.dict_data)
+                                break
                             elif reg == True:
+                                upload = True
                                 self.session = 'OK'
                                 if self.getMail == 'file':
-                                    with open(f'data\\mail\\stream\\{self.folder}\\gmail_done.txt', "a+", encoding="utf-8") as file:
-                                        file.write(gmail + "\n")
                                     with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
                                         file.write(gmail + "\n")
                                 self.dict_data.update({'code': 200, 'session': self.session, 'status': f'Đăng ký tài khoản tiktok thành công'})
@@ -1734,14 +1734,13 @@ class threadToolTds(QThread):
                                 if self.adb.checkXml(CountRepeat=5, element='//node[@text="Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm Hướng dẫn Cộng đồng của chúng tôi nhiều lần."]'):
                                     self.dict_data.update({'code': 204, 'session': 'FAIL', 'status': 'Máy reg tài khoản bị vô hiệu hóa.'})
                                     return self.sendDataUpMainScreen.emit(self.dict_data)
+                                break
                             else:
                                 self.adb.runShell("input keyevent 4")
                                 sleep(3)
                                 self.adb.runShell("input keyevent 4")
                                 sleep(3)
                                 self.adb.runShell("input keyevent 4")
-                            upload = True
-                            break
                     else:
                         # nếu hết 4 lần mà không tìm đc logo tiktok thì quay lại login gmail khác
                         ngaysinh = False
@@ -1797,8 +1796,6 @@ class threadToolTds(QThread):
                                         return self.sendDataUpMainScreen.emit(self.dict_data)
                                     elif try_reg == 'registered':
                                         if self.getMail == 'file':
-                                            with open(f'data\\mail\\stream\\{self.folder}\\gmail_done.txt', "a+", encoding="utf-8") as file:
-                                                file.write(gmail + "\n")
                                             with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
                                                 file.write(gmail + "\n")
                                         self.dict_data.update({'code': 200, 'session': self.session, 'status': 'Đăng nhập tiktok thành công'})
@@ -1806,8 +1803,6 @@ class threadToolTds(QThread):
                                     elif try_reg == True:
                                         upload = True
                                         if self.getMail == 'file':
-                                            with open(f'data\\mail\\stream\\{self.folder}\\gmail_done.txt', "a+", encoding="utf-8") as file:
-                                                file.write(gmail + "\n")
                                             with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
                                                 file.write(gmail + "\n")
                                         self.dict_data.update({'code': 200, 'session': self.session, 'status': f'Đăng ký tài khoản tiktok thành công'})
@@ -1863,7 +1858,7 @@ class threadToolTds(QThread):
 
                                     if add == True:
                                         check = True
-                                        self.dict_data.update({'code': 200, 'user_tiktok': username, 'status': f'Cấu hình thành công: {username}'})
+                                        self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': username, 'status': f'Cấu hình thành công: {username}'})
                                         self.sendDataUpMainScreen.emit(self.dict_data)
                                         break
                                     elif add == 'defaut_avatar' or add == False:
@@ -2410,7 +2405,7 @@ class threadToolTds(QThread):
                     self.dict_data.update({'code': 100, 'status': f'Xác nhận tên tiktok.'})
                     self.sendDataUpMainScreen.emit(self.dict_data) 
                     c = 0
-                    for _ in range(30):
+                    for _ in range(20):
                         if self.adb.checkXml(CountRepeat=1, element='//node[@text="Xác nhận"]'):
                             c += 1
                             sleep(5)
@@ -2429,6 +2424,8 @@ class threadToolTds(QThread):
                             return 'block_reg'
                         else:
                             if c > 0: return True
+                    if self.adb.checkXml(CountRepeat=1, element='//node[@text="Bỏ qua"]'):
+                        return True
                     self.adb.runShell("input keyevent 4")
                     sleep(3)
                     self.adb.runShell("input keyevent 4")
