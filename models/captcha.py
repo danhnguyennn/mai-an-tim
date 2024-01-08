@@ -1,17 +1,19 @@
-from onest_captcha import OneStCaptchaClient
 import requests
+import base64
+import json
+# from onest_captcha import OneStCaptchaClient
 from time import sleep
 
 from models.proxyModel import GenProxy
 
-def stCaptcha(APIKEY):
-    for i in range(2):
-        client = OneStCaptchaClient(apikey=APIKEY)
-        result = client.recaptcha_v2_task_proxyless(site_url="https://traodoisub.com/view/chtiktok/", site_key="6LeGw7IZAAAAAECJDwOUXcriH8HNN7_rkJRZYF8a", invisible=False)
-        try:
-            return result["token"]
-        except: pass
-    return False
+# def stCaptcha(APIKEY):
+#     for i in range(2):
+#         client = OneStCaptchaClient(apikey=APIKEY)
+#         result = client.recaptcha_v2_task_proxyless(site_url="https://traodoisub.com/view/chtiktok/", site_key="6LeGw7IZAAAAAECJDwOUXcriH8HNN7_rkJRZYF8a", invisible=False)
+#         try:
+#             return result["token"]
+#         except: pass
+#     return False
 
 def omoCaptcha(APIKEY):
     for i in range(2):
@@ -114,7 +116,8 @@ def guruCaptcha(APIKEY):
         
 def bypassCaptcha(APIKEY, site='1st'):
     if site == '1st':
-        token = stCaptcha(APIKEY)
+        # token = stCaptcha(APIKEY)
+        pass
     elif site == 'ct69':
         token = captcha69(APIKEY)
     elif site == 'omo_ct':
@@ -124,6 +127,52 @@ def bypassCaptcha(APIKEY, site='1st'):
     elif site == 'guru':
         token = guruCaptcha(APIKEY)
     return token
+
+def captchaTiktok(row, type_cap, APIKEY):
+    for _ in range(2):
+        proxie = GenProxy().getProxy()
+        try:
+            if type_cap == 0:
+                with open(f'img\\img_captcha\\inner_image{row}.jpg', 'rb') as image_file:
+                    inner_image = base64.b64encode(image_file.read()).decode('utf-8')
+                with open(f'img\\img_captcha\\outer_image{row}.jpg', 'rb') as image_file:
+                    outer_image = base64.b64encode(image_file.read()).decode('utf-8')
+                image = f"{outer_image}|{inner_image}"
+            elif type_cap == 2 or type_cap == 1:
+                with open(f'img\\img_captcha\\verify_image{row}.jpg', 'rb') as image_file:
+                    verify_image = base64.b64encode(image_file.read()).decode('utf-8')
+                image = verify_image
+                
+            json_data = {
+                "clientKey": APIKEY,
+                "task": {
+                    "type": "TiktokCaptchaTask",
+                    "image": image,
+                    "subType": type_cap
+                }
+            }
+            data = json.dumps(json_data)
+            create_task = requests.post('http://api.achicaptcha.com/createTask', data=data).json()
+            errorId = create_task['errorId']
+            # print(create_task)
+            if errorId == 0:
+                taskId = create_task['taskId']
+                json_data = {
+                    "clientKey": APIKEY,
+                    "taskId": taskId
+                }
+                data = json.dumps(json_data)
+                for _ in range(60):
+                    result = requests.post('http://api.achicaptcha.com/getTaskResult', data=data).json()
+                    # print(result)
+                    errorId = result['errorId']
+                    if errorId == 0:
+                        solution = result['solution']
+                        return solution
+                    sleep(3)
+
+        except: pass
+
 
 # g_response = bypassCaptcha('7d3b1901f9ff0dd7b07621840e84f3db', 'guru')
 # print(g_response)

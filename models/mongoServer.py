@@ -26,6 +26,8 @@ class MONGO_DB:
             self.accountTds.insert_one(dict_account)
         if "setting" not in table_list:
             dict_setting = {
+                'loginAndReg': True,
+                'loginAndRun': False,
                 'boxAutoLoad': True,
                 'boxUploadAvt': True,
                 'rebootPhone': False,
@@ -131,23 +133,8 @@ class MONGO_DB:
     def addColumnSetting(self):
         update_criteria = {}
         update_data = {'$set': {
-            'siteCaptcha': 'cloud_cap',
-            'key_captcha': '',
-            'acclimit': {
-                'acc_limit_1': '10',
-                'acc_limit_2': '10',
-                'acc_limit_3': '10',
-                'acc_limit_4': '10',
-            },
-            'boxAutoLoad': True,
-            'changeAccTds': True,
-            'boxUploadAvt': True,
-            'rebootPhone': False,
-            'boxCountJob': 1,
-            'timeStart': '00:00:00',
-            'timeEnd': '00:00:00',
-            'searchUser': True,
-            'updated_at': ''
+            'loginAndReg': True,
+            'loginAndRun': False,
             }}
         self.settingTds.update_many(update_criteria, update_data)
 

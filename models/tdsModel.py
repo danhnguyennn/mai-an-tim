@@ -100,10 +100,8 @@ class API_TDS:
                 elif response['data'] == []:
                     return False
                 return response
-            except Exception as e:
-                s = repr(e)
-                if 'Cannot connect to proxy' in s or 'certificate verify failed' in s or 'Read timed out.' in s:
-                    proxie = self.checkProxy()
+            except:
+                proxie = self.checkProxy()
         return False
     def checkCacheJob(self, cache_job, idjob):
         proxie = self.checkProxy()
@@ -111,11 +109,8 @@ class API_TDS:
             try:
                 response = requests.get(f"https://traodoisub.com/api/coin/?type={cache_job}&id={idjob}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
                 return response
-            except Exception as e:
-                s = repr(e)
-                if 'Cannot connect to proxy' in s or 'certificate verify failed' in s or 'Read timed out.' in s:
-                    proxie = self.checkProxy()
-                time.sleep(2)
+            except:
+                proxie = self.checkProxy()
         return False
     def submitJobFollow(self, type_api):
         proxie = self.checkProxy()
@@ -127,7 +122,6 @@ class API_TDS:
                 s = repr(e)
                 if 'Cannot connect to proxy' in s or 'certificate verify failed' in s or 'Read timed out.' in s:
                     proxie = self.checkProxy()
-                time.sleep(2)
         return False
     def sendXu(self, user, pwd, usernhan, xu_send):
         proxie = self.checkProxy()

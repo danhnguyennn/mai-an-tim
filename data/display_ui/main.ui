@@ -2231,7 +2231,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal
                      <property name="geometry">
                       <rect>
                        <x>0</x>
-                       <y>0</y>
+                       <y>-240</y>
                        <width>799</width>
                        <height>1000</height>
                       </rect>
@@ -3779,6 +3779,69 @@ padding-left: 5px;</string>
                             <bool>true</bool>
                            </property>
                           </widget>
+                          <widget class="QFrame" name="frame_6">
+                           <property name="geometry">
+                            <rect>
+                             <x>430</x>
+                             <y>30</y>
+                             <width>341</width>
+                             <height>80</height>
+                            </rect>
+                           </property>
+                           <property name="frameShape">
+                            <enum>QFrame::StyledPanel</enum>
+                           </property>
+                           <property name="frameShadow">
+                            <enum>QFrame::Raised</enum>
+                           </property>
+                           <widget class="QRadioButton" name="radioAutoReg">
+                            <property name="geometry">
+                             <rect>
+                              <x>10</x>
+                              <y>10</y>
+                              <width>231</width>
+                              <height>17</height>
+                             </rect>
+                            </property>
+                            <property name="font">
+                             <font>
+                              <weight>75</weight>
+                              <bold>true</bold>
+                             </font>
+                            </property>
+                            <property name="styleSheet">
+                             <string notr="true">color: rgb(85, 170, 0);</string>
+                            </property>
+                            <property name="text">
+                             <string>Login gmail + tạo tài khoản tiktok</string>
+                            </property>
+                            <property name="checked">
+                             <bool>true</bool>
+                            </property>
+                           </widget>
+                           <widget class="QRadioButton" name="radioLoginTiktok">
+                            <property name="geometry">
+                             <rect>
+                              <x>10</x>
+                              <y>40</y>
+                              <width>321</width>
+                              <height>17</height>
+                             </rect>
+                            </property>
+                            <property name="font">
+                             <font>
+                              <weight>75</weight>
+                              <bold>true</bold>
+                             </font>
+                            </property>
+                            <property name="styleSheet">
+                             <string notr="true">color: rgb(85, 170, 0);</string>
+                            </property>
+                            <property name="text">
+                             <string>Login gmail đã tạo tiktok sẵn, bỏ qua upload avatar</string>
+                            </property>
+                           </widget>
+                          </widget>
                          </widget>
                         </widget>
                         <widget class="QFrame" name="frame_92">
@@ -4396,8 +4459,8 @@ color: rgb(148, 148, 148);</string>
                         <rect>
                          <x>0</x>
                          <y>0</y>
-                         <width>799</width>
-                         <height>513</height>
+                         <width>95</width>
+                         <height>43</height>
                         </rect>
                        </property>
                        <layout class="QHBoxLayout" name="horizontalLayout_20">

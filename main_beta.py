@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
         self.uic.btn_showC.clicked.connect(self.showFarmExtra)
         self.uic.btn_add_account.clicked.connect(self.showAddAccount)
         self.uic.btn_savecmd.clicked.connect(self.clickedSaveSetting)
+        self.uic.btn_update.clicked.connect(self.updateProgram)
 
         self.uic.btn_batdau.clicked.connect(self.__startMultiThread)
         self.uic.btn_dunglai.clicked.connect(self.__stopMultiThread)
@@ -329,6 +330,8 @@ class MainWindow(QMainWindow):
     # setting
     def saveSetting(self):
         boxAutoLoad = self.uic.boxAutoLoad.isChecked()
+        loginAndReg = self.uic.radioAutoReg.isChecked()
+        loginAndRun = self.uic.radioLoginTiktok.isChecked()
 
         radioTaphoa = self.uic.radioTaphoa.isChecked()
         radioFile = self.uic.radioFile.isChecked()
@@ -416,6 +419,8 @@ class MainWindow(QMainWindow):
 
         updated_at = getCurrentTime()['time']
         dict_setting = {
+            'loginAndReg': loginAndReg,
+            'loginAndRun': loginAndRun,
             'boxAutoLoad': boxAutoLoad,
             'getMail': getMail, # file
             'site': site,
@@ -452,6 +457,8 @@ class MainWindow(QMainWindow):
     def loadDataSetting(self):
         dict_setting        = self.db.getSetting()
         self.dict_setting   = dict_setting
+        self.loginAndReg    = dict_setting['loginAndReg']
+        self.loginAndRun    = dict_setting['loginAndRun']
         self.boxAutoLoad    = dict_setting['boxAutoLoad']
         self.getMail        = dict_setting['getMail']
         self.site           = dict_setting['site']
@@ -483,7 +490,9 @@ class MainWindow(QMainWindow):
     def setSetting(self):
         # set autoload setting
         self.uic.boxAutoLoad.setChecked(self.boxAutoLoad)
-        
+        self.uic.radioAutoReg.setChecked(self.loginAndReg)
+        self.uic.radioLoginTiktok.setChecked(self.loginAndRun)
+
         if self.getMail == 'api':
             self.uic.radioTaphoa.setChecked(True)
         elif self.getMail == 'file':
@@ -622,6 +631,30 @@ class MainWindow(QMainWindow):
             return Information("Vui lòng chọn tài khoản cần cập nhật.")
         dlg = updateData(self.uic, list_row, list_object)
         dlg.exec_()
+    def updateProgram(self):
+        mess = QMessageBox()
+        try:
+            self.versiNew = requests.get('https://pastebin.com/raw/idLkbasd').text
+            messUpdate = requests.get('https://pastebin.com/raw/Dngr6CXu').text
+        except:
+            Information('Lỗi kết nối sever vui lòng thử lại sau')
+            self.close()
+        if int(self.versiNew.replace('.','')) > int(self.VERSION.replace('.','')):
+            mess.setWindowTitle('Cập nhật phiên bản mới')
+            mess.setWindowIcon(QtGui.QIcon('../File/images/update.png'))
+            mess.setText(f'''Phiên bản hiện tại: {self.VERSION}\nPhiên bản mới nhất: {self.versiNew}\n{messUpdate}''')
+            mess.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            x = mess.exec()
+            if x == QMessageBox.StandardButton.Yes:
+                path = os.getcwd().split('\\')
+                path.remove(path[len(path)-1])
+                path_new = '\\'.join(path)
+                os.startfile(path_new + '\\update.exe')
+                self.close()
+            elif x == QMessageBox.StandardButton.No:
+                Information("Vui lòng update để được fix các lỗi tồn động trong tool - UPDATE ĐI")
+        else:
+            Information("Phiên bản bạn đang sử dụng đang là phiên bản mới nhất") 
 
     # setitng show column table
     def setDefautTable(self):
@@ -996,6 +1029,8 @@ class MainWindow(QMainWindow):
         return {
             'database': self.db,
             'boxAutoLoad': self.boxAutoLoad,
+            'loginAndReg': self.loginAndReg,
+            'loginAndRun': self.loginAndRun,
             'getMail': self.getMail,
             'apiKeyTaphoa': self.apiKeyTaphoa,
             'keyShop': self.keyShop,
@@ -1242,6 +1277,8 @@ class threadToolTds(QThread):
         self.vpn            = dataWindow['vpn']
         # get gmail
         self.boxAutoLoad    = dataWindow['setting']['boxAutoLoad']
+        self.loginAndReg    = dataWindow['setting']['loginAndReg']
+        self.loginAndRun    = dataWindow['setting']['loginAndRun']
         self.getMail        = dataWindow['setting']['getMail']
         self.apiKeyTaphoa   = dataWindow['setting']['apiKeyTaphoa']
         self.keyShop        = dataWindow['setting']['keyShop']
@@ -1336,6 +1373,10 @@ class threadToolTds(QThread):
         # limit acc + job 
         self.limitStopAcc   = dict_setting['limitStopAcc']
         self.limitStopJob   = dict_setting['limitStopJob']
+
+        # auto reg anh login
+        self.loginAndReg    = dict_setting['loginAndReg']
+        self.loginAndRun    = dict_setting['loginAndRun']
 
     def run(self):
         self.dict_data.update({'code': 100, 'status': 'Đang bắt đầu chạy.'})
@@ -1695,7 +1736,7 @@ class threadToolTds(QThread):
                         self.adb.runShell("input swipe 224 1435 143 285 100")
                         self.adb.runShell("input swipe 224 1435 143 285 100")
                         sleep(2)
-                        self.dict_data.update({'code': 100, 'status': 'Vô hồ sơ đăng ký.'})
+                        self.dict_data.update({'code': 100, 'status': 'Vô hồ sơ, tiến hành login tiktok bằng gmail.'})
                         self.sendDataUpMainScreen.emit(self.dict_data)
                         self.adb.clicks(969, 1848) # Hồ Sơ
                         # 
@@ -1757,7 +1798,7 @@ class threadToolTds(QThread):
                 self.dict_data.update({'code': 100, 'status': 'Đang khởi chạy dữ liệu tiktok'})
                 self.sendDataUpMainScreen.emit(self.dict_data)
                 check = False
-                if self.session == 'OK':
+                if self.session == 'OK' and self.loginAndReg == True:
                     for __ in range(3):
                         self.adb.runShell("monkey -p com.ss.android.ugc.trill -c android.intent.category.LAUNCHER 1")
                         sleep(7)
@@ -1841,6 +1882,7 @@ class threadToolTds(QThread):
                                         self.adb.runShell("input keyevent 4")
                                     else: break
                                 if username != False and len(username) > 4:
+                                    add = False
                                     for _ in range(5):
                                         self.dict_data.update({'code': 100, 'status': f'[{_}] : Đang cấu hình username: {username}'})
                                         self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1885,8 +1927,38 @@ class threadToolTds(QThread):
                             continue
 
                         if check: break
-
                     # end for
+                elif self.session == 'OK' and self.loginAndRun == True:
+                    if gmail == '':
+                        username = self.user_tiktok
+                    else:
+                        username = gmail.split('|')[2].strip()
+                    if username == '': check = False
+                    else:
+                        add = 'Không check được'
+                        for _ in range(5):
+                            self.dict_data.update({'code': 100, 'status': f'[{_}] : Đang cấu hình username: {username}'})
+                            self.sendDataUpMainScreen.emit(self.dict_data)
+                            g_captcha_result = bypassCaptcha(self.key_captcha, self.site_cap)
+                            if g_captcha_result == False:
+                                self.dict_data.update({'code': 100, 'status': f'Giải captcha thất bại.'})
+                                self.sendDataUpMainScreen.emit(self.dict_data)
+                                continue
+                            add = self.tds.cauHinhTds(g_captcha_result, username, self.usertds, self.pwdtds)
+                            if add != False: 
+                                break
+                            self.dict_data.update({'code': 100, 'status': f'Chờ 60s cấu hình lại'})
+                            self.sendDataUpMainScreen.emit(self.dict_data)
+                            sleep(60)
+
+                        if add == True:
+                            check = True
+                            self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': username, 'status': f'Cấu hình thành công: {username}'})
+                            self.sendDataUpMainScreen.emit(self.dict_data)
+                        else:
+                            with open('data\\mail\\add_fail.txt', 'a+', encoding='utf-8') as file:
+                                file.write(gmail + add + '\n')
+                            check = False
                 # end if  
                 if check == False:
                     self.session = 'FAIL'
@@ -1924,7 +1996,7 @@ class threadToolTds(QThread):
                             link = self.data_follow['data'][0]['link']
                             if self.cache < 14:
                                 if type_get_job == 'tiktok_follow':
-                                    Thread(target=self.checkCacheTds, args=(idjob, )).start()
+                                    Thread(target=self.checkCacheTds, args=(self.cache, idjob, )).start()
                                     urljob = 'snssdk1180://user/profile/'+self.data_follow['data'][0]['real_id']
                                     namejob = self.data_follow['data'][0]['uniqueID']
                                
@@ -2021,12 +2093,8 @@ class threadToolTds(QThread):
                                     self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username}'})
                                     self.sendDataUpMainScreen.emit(self.dict_data)
                                     sleep(1)
-                                    if self.getMail == 'file':
-                                        with open(f'data\\mail\\stream\\{self.folder}\\acc.txt', 'a+', encoding='utf-8') as file:
-                                            file.write(f"{gmail}|{username}|{xumotacc}|DIE\n")
-                                    else:
-                                        with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
-                                            file.write(f"{self.row}|{gmail}|{username}|{xumotacc}|DIE\n")
+                                    with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
+                                        file.write(f"Thread: {self.row}|Device: {self.phone_device}|{gmail}|{username}|{total_xu_them}|DIE\n")
                                     break
                                 
                             self.dict_data.update({'code': 100, 'cache': self.cache, 'status': f'Đã hoàn thành {self.cache} nhiệm vụ {type_get_job}.'})
@@ -2062,15 +2130,11 @@ class threadToolTds(QThread):
                                         
                                         check = False
                                         self.session = 'FAIL'
-                                        self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Thoát tài khoản >> {username} >> đã bú: {formatted_xu}'})
+                                        self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Thoát tài khoản >> {username} >> đã chạy được: {formatted_xu}'})
                                         self.sendDataUpMainScreen.emit(self.dict_data)
                                         sleep(1)
-                                        if self.getMail == 'file':
-                                            with open(f'data\\mail\\stream\\{self.folder}\\acc.txt', 'a+', encoding='utf-8') as file:
-                                                file.write(f"{gmail}|{username}|{formatted_xu}\n")
-                                        else:
-                                            with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
-                                                file.write(f"{self.row}|{gmail}|{username}|{formatted_xu}\n")
+                                        with open(f'data\\mail\\acc.txt', 'a+', encoding='utf-8') as file:
+                                            file.write(f"Thread: {self.row}|Device: {self.phone_device}|{gmail}|{username}|{formatted_xu}\n")
                                         break
                                     else:
                                         self.cache = 0
@@ -2181,11 +2245,10 @@ class threadToolTds(QThread):
                     file.write(f"Thread: {self.row} : {tb}\n\n")
             sleep(5)
 
-    def checkCacheTds(self, idjob):
+    def checkCacheTds(self, cache_old, idjob):
         check_cache = self.tds.checkCacheJob('TIKTOK_FOLLOW_CACHE', idjob)
-        # print(check_cache)
-        if check_cache == False: return self.checkCacheTds(idjob) # check cache lỗi 
-        self.cache = check_cache['cache']
+        try: self.cache = check_cache['cache']
+        except: self.cache = cache_old
     def publicProfile(self):
         self.adb.find_image('img\\3gach.png', 5, row=self.row)
         self.adb.find_image('img\\setting8.png', 5, row=self.row)
@@ -2382,6 +2445,9 @@ class threadToolTds(QThread):
 
         self.dict_data.update({'code': 100, 'status': f'Đợi tiktok xác minh gmail.'})
         self.sendDataUpMainScreen.emit(self.dict_data)
+        
+        if self.loginAndRun == True:
+            return True
         for _ in range(4):
             # print(_)
             if self.adb.checkXml(CountRepeat=5, element='//node[@text="Ngày sinh"]'):
