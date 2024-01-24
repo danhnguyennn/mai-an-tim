@@ -72,9 +72,9 @@ class ADB_TOOL:
                         if cord == True:
                             return {'x1':top_left[0], 'y1':top_left[1], 'x2':bottom_right[0], 'y2':bottom_right[1]}
                         return True
-                    else:
-                        if loop != 1:
-                            time.sleep(1)
+                    # else:
+                    #     if loop != 1:
+                    #         time.sleep(0.5)
                 return False
             except Exception as e:
                 tb = traceback.format_exc()

@@ -9,26 +9,23 @@ class API_TDS:
             self.arr_proxy = file.readlines()
         self.ss = requests.Session()
         self.access_token = access_token
-        self.check_proxy = 0
         
-    def getProxy(self):
-        if self.check_proxy >= 10:
-            return {}
-        if len(self.arr_proxy) > 0:
-            proxie = random.choice(self.arr_proxy).strip()
-            splitProxy = proxie.split(':')
-            host = splitProxy[0]
-            port = splitProxy[1]
-            user = splitProxy[2]
-            pwd = splitProxy[3]
-            self.check_proxy = 0
-            return {'https': f'http://{user}:{pwd}@{host}:{port}'}
-        else:
-            time.sleep(3)
-            self.check_proxy += 1
-            with open('data\\proxy\\proxy.txt', 'r', encoding='utf-8') as file:
-                self.arr_proxy = file.readlines()
-            return self.getProxy()
+    def getProxy(self, max_retries=10):
+        retries = 0
+        while retries < max_retries: 
+            if len(self.arr_proxy) > 0:
+                proxie = random.choice(self.arr_proxy).strip()
+                splitProxy = proxie.split(':')
+                host = splitProxy[0]
+                port = splitProxy[1]
+                user = splitProxy[2]
+                pwd = splitProxy[3]
+                return {'https': f'http://{user}:{pwd}@{host}:{port}'}
+            else:
+                retries += 1
+                with open('data\\proxy\\proxy.txt', 'r', encoding='utf-8') as file:
+                    self.arr_proxy = file.readlines()
+        return {}
     def checkProxy(self):
         for i in range(10):
             proxy = self.getProxy()
@@ -105,7 +102,7 @@ class API_TDS:
         return False
     def checkCacheJob(self, cache_job, idjob):
         proxie = self.checkProxy()
-        for i in range(5):
+        for i in range(3):
             try:
                 response = requests.get(f"https://traodoisub.com/api/coin/?type={cache_job}&id={idjob}&access_token={self.access_token}", proxies=proxie, timeout=10).json()
                 return response

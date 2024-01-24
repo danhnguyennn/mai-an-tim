@@ -9,26 +9,23 @@ class GenProxy():
             self.arr_proxy = file.readlines()
         self.allow_ip = requests.get('https://icanhazip.com').text.strip()
         # self.allow_ip = '171.250.246.88'
-        self.check_proxy = 0
 
-    def getProxy(self):
-        if self.check_proxy >= 10:
-            return {}
-        if len(self.arr_proxy) > 0:
-            proxie = random.choice(self.arr_proxy).strip()
-            splitProxy = proxie.split(':')
-            host = splitProxy[0]
-            port = splitProxy[1]
-            user = splitProxy[2]
-            pwd = splitProxy[3]
-            self.check_proxy = 0
-            return {'https': f'http://{user}:{pwd}@{host}:{port}'}
-        else:
-            sleep(3)
-            self.check_proxy += 1
-            with open('data\\proxy\\proxy.txt', 'r', encoding='utf-8') as file:
-                self.arr_proxy = file.readlines()
-            return self.getProxy()
+    def getProxy(self, max_retries = 10):
+        retries = 0
+        while retries < max_retries: 
+            if len(self.arr_proxy) > 0:
+                proxie = random.choice(self.arr_proxy).strip()
+                splitProxy = proxie.split(':')
+                host = splitProxy[0]
+                port = splitProxy[1]
+                user = splitProxy[2]
+                pwd = splitProxy[3]
+                return {'https': f'http://{user}:{pwd}@{host}:{port}'}
+            else:
+                retries += 1
+                with open('data\\proxy\\proxy.txt', 'r', encoding='utf-8') as file:
+                    self.arr_proxy = file.readlines()
+        return {}
     def checkProxy(self):
         for i in range(10):
             proxy = self.getProxy()
