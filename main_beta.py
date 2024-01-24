@@ -26,7 +26,7 @@ from models.tdsModel import API_TDS
 from models.adbModels import ADB_TOOL
 from models.mongoServer import MONGO_DB
 from models.captcha import bypassCaptcha
-
+from models.proxyModel import GenProxy
 
 def Information(content):
     msg = QtWidgets.QMessageBox()
@@ -45,9 +45,16 @@ def getCurrentTime():
         'time': current_time,
         'day' : today
     }
-def get_mail_fron_file():
+def get_mail_from_api():
     response = requests.get('http://127.0.0.1:5000/api/data')
     return response.json()
+def get_key_proxy_from_api():
+    response = requests.get('http://127.0.0.1:5000/api/getKeyWwproxy')
+    return response.json()
+def post_key_proxy_from_api(apiKey):
+    requests.post('http://127.0.0.1:5000/api/sendKeyWwproxy', json={'ApiKey': apiKey})
+
+
 def randStr(length):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 class MainWindow(QMainWindow):
@@ -1311,6 +1318,9 @@ class threadToolTds(QThread):
         # limit acc + job 
         self.limitStopAcc   = dataWindow['setting']['limitStopAcc']
         self.limitStopJob   = dataWindow['setting']['limitStopJob']
+        # 
+        # self.rotating_proxy = 'p.webshare.io:9999'
+        self.rotating_proxy = 'geo.proxyaz.net:12321'
 
         self.dict_data = {
             'code': 100,
@@ -1381,6 +1391,9 @@ class threadToolTds(QThread):
     def run(self):
         self.dict_data.update({'code': 100, 'status': 'Đang bắt đầu chạy.'})
         self.sendDataUpMainScreen.emit(self.dict_data)
+
+        # set proxy local
+        self.changeProxyPhone(":0")
 
         # check path image
         path = self.randomPictures(self.folder_image)
@@ -1466,10 +1479,6 @@ class threadToolTds(QThread):
                     with open(f'data\\mail\\gmail.txt', 'r', encoding='utf-8') as file:
                         self.arr_gmail = file.readlines()
 
-                    if len(self.arr_gmail) == 0:
-                        self.dict_data.update({'code': 204, 'status': f'Tất cả gmail trong file đã được sử dụng.'})
-                        return self.sendDataUpMainScreen.emit(self.dict_data)
-
                 # check time sleep
                 current_time = getCurrentTime()['time']
                 if break_start_time == '':
@@ -1484,6 +1493,8 @@ class threadToolTds(QThread):
                 self.follow_me = False
                 xumotacc = 0
                 ngaysinh = False
+                apikey = ''
+
                 if self.session == 'FAIL':
                     # xóa data tiktok
                     self.dict_data.update({'code': 100, 'status': 'Đóng tiktok và xóa dữ liệu app'})
@@ -1562,12 +1573,16 @@ class threadToolTds(QThread):
                             self.dict_data.update({'code': 100, 'status': 'Đang tranh giành gmail taphoammo'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
                             gmail = self.muaMail()
-                        elif self.getMail == 'file': 
-                            gmail = get_mail_fron_file()
-                            if gmail == {}:
-                                self.dict_data.update({'code': 204, 'status': f'Tất cả gmail trong file đã được sử dụng.'})
-                                return self.sendDataUpMainScreen.emit(self.dict_data)
-                            gmail = gmail['email']
+                        elif self.getMail == 'file':
+                            while True:
+                                get_m = get_mail_from_api()
+                                if get_m == {}:
+                                    self.dict_data.update({'code': 100, 'status': 'Mail trong file tạm thời hết ...'})
+                                    self.sendDataUpMainScreen.emit(self.dict_data)
+                                    sleep(60)
+                                    continue
+                                gmail = get_m['email']
+                                break
                         elif self.getMail == 'shop':
                             self.dict_data.update({'code': 100, 'status': 'Đang tranh giành gmail shop phan9999'})
                             self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1575,7 +1590,12 @@ class threadToolTds(QThread):
                             
                         gmail_t = gmail.split('|')
                         self.pwd_gmail = gmail_t[1].strip()
-
+                        # if self.getMail == 'file' and self.loginAndRun == True:
+                        #     usertiktok =  gmail_t[2].strip()
+                        #     if self.checklive_tiktok(usertiktok) == False:
+                        #         with open('data\\mail\\add_fail.txt', 'a+', encoding='utf-8') as file:
+                        #             file.write(gmail + '|DIE\n')
+                        #         continue
                         # Đăng nhập google
                         ggCheck = True
                         login = False
@@ -1664,10 +1684,11 @@ class threadToolTds(QThread):
 
                     self.adb.runShell("am force-stop com.android.settings") 
                     # Bật VPN
-                    self.dict_data.update({'code': 100, 'status': f'Tiến hành bật VPN {self.vpn}'})
-                    self.sendDataUpMainScreen.emit(self.dict_data)
-                    self.changeVPN(change=True, off=False)
-                    sleep(2)
+                    if self.loginAndReg == True:
+                        self.dict_data.update({'code': 100, 'status': f'Tiến hành bật VPN {self.vpn}'})
+                        self.sendDataUpMainScreen.emit(self.dict_data)
+                        self.changeVPN(change=True, off=False)
+                        sleep(2)
                     
                     if self.boxUploadAvt == True:
                         # clear image 
@@ -1676,8 +1697,8 @@ class threadToolTds(QThread):
                         sleep(7)
                         self.adb.runShell('input keyevent KEYCODE_APP_SWITCH')
                         sleep(1)
-                        if self.adb.checkXml(CountRepeat=2, element='//node[@text="ĐÓNG TẤT CẢ"]') == False:  
-                            self.adb.checkXml(CountRepeat=2, element='//node[@text="Đóng tất cả"]')
+                    if self.adb.checkXml(CountRepeat=2, element='//node[@text="ĐÓNG TẤT CẢ"]') == False:  
+                        self.adb.checkXml(CountRepeat=2, element='//node[@text="Đóng tất cả"]')
 
                     # Mở tiktok
                     self.dict_data.update({'code': 100, 'status': f'Tiến hành mở tiktok'})
@@ -1740,7 +1761,7 @@ class threadToolTds(QThread):
                         self.sendDataUpMainScreen.emit(self.dict_data)
                         self.adb.clicks(969, 1848) # Hồ Sơ
                         # 
-                        self.adb.clicks(969, 1848)                    
+                        self.adb.clicks(969, 1848)
                         sleep(3)
                         if self.adb.checkXml(CountRepeat=5,element='//node[@text="Chuyển đổi tài khoản"]'):                                           
                             sleep(3)
@@ -1751,37 +1772,62 @@ class threadToolTds(QThread):
                         sleep(2)
                         if self.adb.find_image('img\\logingmail.png', 3, click=False, row=self.row) or self.adb.find_image('img\\dangky8.png', 3, row=self.row) or self.adb.find_image('img\\dangnhap9.png', 3, row=self.row): # check popup
                             # vô hồ sơ đăng ký
-                            reg = self.registerTiktok()
-                            if reg == 'block_reg':
-                                self.dict_data.update({'code': 204, 'status': 'Máy bị chặn reg tài khoản.'})
-                                return self.sendDataUpMainScreen.emit(self.dict_data)
-                            elif reg == 'registered':
-                                upload = True
-                                self.session = 'OK'
-                                if self.getMail == 'file':
-                                    with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
-                                        file.write(gmail + "\n")
-                                self.dict_data.update({'code': 200, 'session': self.session, 'status': 'Đăng nhập tiktok thành công'})
-                                self.sendDataUpMainScreen.emit(self.dict_data)
-                                break
-                            elif reg == True:
-                                upload = True
-                                self.session = 'OK'
-                                if self.getMail == 'file':
-                                    with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
-                                        file.write(gmail + "\n")
-                                self.dict_data.update({'code': 200, 'session': self.session, 'status': f'Đăng ký tài khoản tiktok thành công'})
-                                self.sendDataUpMainScreen.emit(self.dict_data)
-                                if self.adb.checkXml(CountRepeat=5, element='//node[@text="Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm Hướng dẫn Cộng đồng của chúng tôi nhiều lần."]'):
-                                    self.dict_data.update({'code': 204, 'session': 'FAIL', 'status': 'Máy reg tài khoản bị vô hiệu hóa.'})
+                            for i in range(3):
+                                apikey = ''
+                                if self.loginAndRun == True:
+                                    wwproxy = self.getAndCheckProxy()
+                                    apikey = wwproxy['apiKey']
+                                    proxy_ww = wwproxy['proxy']
+                                    self.changeProxyPhone(proxy_ww)
+                                reg = self.registerTiktok()
+                                if reg == 'block_reg':
+                                    self.dict_data.update({'code': 204, 'status': 'Máy bị chặn reg tài khoản.'})
                                     return self.sendDataUpMainScreen.emit(self.dict_data)
-                                break
-                            else:
-                                self.adb.runShell("input keyevent 4")
-                                sleep(3)
-                                self.adb.runShell("input keyevent 4")
-                                sleep(3)
-                                self.adb.runShell("input keyevent 4")
+                                elif reg == 'registered':
+                                    upload = True
+                                    self.session = 'OK'
+                                    if self.getMail == 'file':
+                                        with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
+                                            file.write(gmail + "\n")
+                                    self.dict_data.update({'code': 200, 'session': self.session, 'status': 'Đăng nhập tiktok thành công'})
+                                    self.sendDataUpMainScreen.emit(self.dict_data)
+                                    break
+                                elif reg == True:
+                                    upload = True
+                                    self.session = 'OK'
+                                    if self.getMail == 'file':
+                                        with open(f'data\\mail\\gmail_done.txt', "a+", encoding="utf-8") as file:
+                                            file.write(gmail + "\n")
+                                    self.dict_data.update({'code': 200, 'session': self.session, 'status': f'Đăng ký tài khoản tiktok thành công'})
+                                    self.sendDataUpMainScreen.emit(self.dict_data)
+                                    if self.adb.checkXml(CountRepeat=5, element='//node[@text="Tài khoản của bạn đã bị cấm vĩnh viễn do vi phạm Hướng dẫn Cộng đồng của chúng tôi nhiều lần."]'):
+                                        self.dict_data.update({'code': 204, 'session': 'FAIL', 'status': 'Máy reg tài khoản bị vô hiệu hóa.'})
+                                        return self.sendDataUpMainScreen.emit(self.dict_data)
+                                    break
+                                elif reg == 'log_fail':
+                                    self.changeProxyPhone(":0")
+                                    if apikey != '': post_key_proxy_from_api(apikey)
+                                else:
+                                    if self.loginAndRun == True:
+                                        self.changeProxyPhone(":0")
+                                        if apikey != '': post_key_proxy_from_api(apikey)
+                                    # 
+                                    self.adb.runShell("input keyevent 4")
+                                    sleep(3)
+                                    self.adb.runShell("input keyevent 4")
+                                    sleep(3)
+                                    self.adb.runShell("input keyevent 4")
+                                    self.adb.clicks(969, 1848) # Hồ Sơ
+                                    # 
+                                    self.adb.clicks(969, 1848)
+                                    if self.adb.checkXml(CountRepeat=5,element='//node[@text="Chuyển đổi tài khoản"]'):                                           
+                                        sleep(3)
+                                    else:
+                                        if self.adb.find_image('img\\dangky8.png', 2, row=self.row) == False: # check popup
+                                            self.adb.find_image('img\\dangnhap9.png', 2, row=self.row) # check popup
+                            # check login success
+                            if self.session == 'OK': break
+                            self.adb.runShell("am force-stop com.ss.android.ugc.trill")
                     else:
                         # nếu hết 4 lần mà không tìm đc logo tiktok thì quay lại login gmail khác
                         ngaysinh = False
@@ -1789,11 +1835,22 @@ class threadToolTds(QThread):
                         self.dict_data.update({'code': 200, 'session': self.session, 'status': f'Đăng ký tiktok thất bại'})
                         self.sendDataUpMainScreen.emit(self.dict_data)
                         continue
-
+                
+                if self.loginAndRun == True:
+                    self.changeProxyPhone(":0")
+                    if apikey != '': post_key_proxy_from_api(apikey)
+                # 
                 if '5200' in self.phone_device:
                     self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
                 elif '4200' in self.phone_device:
                     self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row)
+                
+                if self.loginAndRun == True:
+                    self.dict_data.update({'code': 100, 'status': f'Tiến hành bật VPN {self.vpn}'})
+                    self.sendDataUpMainScreen.emit(self.dict_data)
+                    self.changeVPN(change=True, off=False)
+                    sleep(2)
+                
                 # end session False
                 self.dict_data.update({'code': 100, 'status': 'Đang khởi chạy dữ liệu tiktok'})
                 self.sendDataUpMainScreen.emit(self.dict_data)
@@ -1929,6 +1986,7 @@ class threadToolTds(QThread):
                         if check: break
                     # end for
                 elif self.session == 'OK' and self.loginAndRun == True:
+                    self.adb.runShell("monkey -p com.ss.android.ugc.trill -c android.intent.category.LAUNCHER 1")
                     if gmail == '':
                         username = self.user_tiktok
                     else:
@@ -2086,8 +2144,8 @@ class threadToolTds(QThread):
                             else:
                                 self.dict_data.update({'code': 100, 'status': f'Check live account tiktok.'})
                                 self.sendDataUpMainScreen.emit(self.dict_data)
-                                check_tiktok = self.checkUserTiktok(username)
-                                if username not in check_tiktok:
+                                check_tiktok = self.checklive_tiktok(username)
+                                if check_tiktok == False:
                                     check = False
                                     self.session = 'FAIL'
                                     self.dict_data.update({'code': 200, 'session': self.session, 'user_tiktok': '', 'cache': '0', 'status': f'Tài khoản bị vô hiệu hóa >> {username}'})
@@ -2239,12 +2297,50 @@ class threadToolTds(QThread):
                     self.dict_data.update({'code': 100, 'status': f'Thoát app vào lại'})
                     self.sendDataUpMainScreen.emit(self.dict_data)
             except:
+                if self.loginAndRun == True:
+                    self.changeProxyPhone(":0")
+                    if apikey != '': post_key_proxy_from_api(apikey)
                 tb = traceback.format_exc()
                 print("Exception 1", tb)
                 with open('report_bug\\bug_requests.txt', 'a+', encoding='UTF-8') as file:
                     file.write(f"Thread: {self.row} : {tb}\n\n")
             sleep(5)
 
+
+    def GET(self, url, proxie={}):
+        for _ in range(5):
+            try:
+                return requests.get(url, proxies=proxie, timeout=20)
+            except: pass
+        return False
+    def getAndCheckProxy(self):
+        while True:
+            getKey = get_key_proxy_from_api()
+            if getKey != {}: 
+                apikey = getKey['api_key']
+                break
+            self.dict_data.update({'code': 100, 'status': f'Tạm hết key, đang chờ lấy key ...'})
+            self.sendDataUpMainScreen.emit(self.dict_data)
+            sleep(30)
+        while True:
+            proxy_ww = GenProxy().Wwproxy(apikey)
+            checkip = self.GET('https://ipv4.webshare.io/', {'https': f'http://{proxy_ww}'})
+            if checkip != False: break
+            sleep(15)
+        return {
+            'apiKey': apikey,
+            'proxy': proxy_ww
+        }
+    def changeProxyPhone(self, proxy):
+        self.adb.runShell(f"settings put global http_proxy {proxy}")
+    def checklive_tiktok(self, user_tiktok):
+        for _ in range(2):
+            proxie = GenProxy().getProxy()
+            check = requests.get(f'https://countik.com/api/exist/{user_tiktok}', timeout=10, proxies=proxie).json()
+            try:
+                return check['id']
+            except: pass
+        return False
     def checkCacheTds(self, cache_old, idjob):
         check_cache = self.tds.checkCacheJob('TIKTOK_FOLLOW_CACHE', idjob)
         try: self.cache = check_cache['cache']
@@ -2276,7 +2372,7 @@ class threadToolTds(QThread):
         list_qc = ['closequa8', 'closevitri8', 'khongchophep', 'updatechplay', 'dahieu', 'xacnhan_nn', 'sendfeedback']
         for i in range(len(list_qc)):
             qc = random.choice(list_qc)
-            self.adb.find_image(f'img\\{qc}.png', 1, threshold=0.65, row=self.row)
+            self.adb.find_image(f'img\\{qc}.png', 1, threshold=0.6, row=self.row)
             list_qc.remove(qc)
             if self.event.is_set(): break
     def closeQcTiktok(self):
@@ -2285,14 +2381,14 @@ class threadToolTds(QThread):
             sleep(3)
             if self.event_qc.is_set(): break
             self.adb.find_image('img\\closequa8.png', 1, threshold=0.7, row=self.row)
-            self.adb.find_image('img\\thuong.png', 1, threshold=0.7, row=self.row)
-            self.adb.find_image('img\\thuong1.png', 5,threshold=0.7, row=self.row)
-
+            
             if '5200' in self.phone_device:
                 self.adb.find_image('img\\tuchoi9.png', 1, row=self.row)
             elif '4200' in self.phone_device:
                 self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row)
 
+            self.adb.find_image('img\\thuong.png', 1, threshold=0.7, row=self.row)
+            self.adb.find_image('img\\thuong1.png', 5,threshold=0.7, row=self.row)
             if self.event_qc.is_set(): break
             self.adb.find_image('img\\closevitri8.png', 1, threshold=0.7, row=self.row)
             self.adb.find_image('img\\khongchophep.png', 1, row=self.row)
@@ -2307,32 +2403,26 @@ class threadToolTds(QThread):
             sleep(1)
     def interactTiktok(self):
         self.adb.runShell("input keyevent 4")
+        # self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
+        position_user = self.adb.find_image('img\\user_8.png', 2, cord=True, threshold=0.7, click=False, row=self.row)
+        if position_user != False:
+            x1 = position_user['x1']+20 # x user
+            y1 = position_user['y1']+150 # y tym
+            self.adb.clicks(x1, y1)
+        self.adb.runShell("input keyevent 4")
+        # 
         while not self.event.is_set():
             self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
-            self.interruptible_sleep(random.randint(2, 4), self.event)
             if self.event.is_set(): break
-            tt = random.randint(0, 1)
+            tt = random.choices([0, 1], weights=[0.2, 0.8])[0]
             if tt == 1:
-                size = self.adb.getvmSize()
-                x = int(size[0]) / 2
-                y = int(size[1]) / 2
-                self.adb.doubleClick(x, y)
+                position_user = self.adb.find_image('img\\user_8.png', 3, cord=True, threshold=0.7, click=False, row=self.row)
+                if position_user != False:
+                    x1 = position_user['x1']+20 # x user
+                    y1 = position_user['y1']+150 # y tym
+                    self.adb.clicks(x1, y1)
                 self.interruptible_sleep(random.randint(2, 5), self.event)
-                if self.event.is_set(): break
                 self.adb.runShell("input keyevent 4")
-                sleep(2)
-
-            # follow default tiktok 
-            # if self.follow_me == False:
-            #     link_follow = 'snssdk1180://user/profile/danh.ng28'
-            #     self.adb.runShell(f"am start -a android.intent.action.VIEW -d {link_follow}")
-            #     self.adb.runShell("settings put system accelerometer_rotation 0")
-            #     sleep(random.randint(2, 4))
-            #     self.adb.find_image('img\\follow8.png', 5, row=self.row)
-            #     self.adb.runShell("input keyevent 4")
-            #     self.follow_me = True
-            #     sleep(2)
-            # end follow
 
             self.adb.runShell("input swipe 224 1435 143 285 100") # lướt
             if self.event.is_set(): break
@@ -2348,15 +2438,25 @@ class threadToolTds(QThread):
     def VPNHMA(self, change=False, off=False):
         for _ in range(5):
             sleep(5)
-            if self.adb.find_image('img\\on_8.png', 3, click=False, row=self.row):
+            if self.adb.find_image('img\\on_8.png', 2, click=False, row=self.row) or self.adb.find_image('img\\close_qchma.png', 2, click=False, row=self.row):
                 if off:
+                    self.adb.find_image('img\\close_qchma.png', 3, row=self.row)
                     self.adb.find_image('img\\on_8.png', 3, row=self.row)
+                   
                 if change:
-                    self.adb.find_image('img\\rote_8.png', 3, row=self.row)
+                    self.adb.checkXml(CountRepeat=3, element='//node[@text="Vị trí"]'); sleep(2)
+                    self.adb.checkXml(CountRepeat=2, element='//node[@text="Tất cả"]')
+                    for i in range(random.randint(1, 7)):
+                        self.adb.runShell(f"input swipe 224 720 143 285 {random.randint(70, 140)}")
+                    self.adb.checkXml(CountRepeat=2, element='//node[@resource-id="com.hidemyass.hidemyassprovpn:id/name"]')
                 break
             else:
                 if off: break
-                self.adb.find_image('img\\off_8.png', 3, row=self.row)
+                self.adb.checkXml(CountRepeat=3, element='//node[@text="Vị trí"]'); sleep(2)
+                self.adb.checkXml(CountRepeat=2, element='//node[@text="Tất cả"]')
+                for i in range(random.randint(1, 7)):
+                    self.adb.runShell(f"input swipe 224 720 143 285 {random.randint(70, 140)}")
+                self.adb.checkXml(CountRepeat=2, element='//node[@resource-id="com.hidemyass.hidemyassprovpn:id/name"]')
                 break
     def VPNS1111(self, change=False, off=False):
         for _ in range(5):
@@ -2422,7 +2522,7 @@ class threadToolTds(QThread):
             self.VPNS1111(change, off)
         elif self.vpn == 'ssmax':
             self.VPN_SS(change, off)
-    def registerTiktok(self):
+    def registerTiktok(self, max_retries=10):
         self.dict_data.update({'code': 100, 'status': 'Tiếp tục đăng ký với Google'})
         self.sendDataUpMainScreen.emit(self.dict_data)
         if self.adb.checkXml(CountRepeat=5, element='//node[@content-desc="Tiếp tục với Google" or @text="Tiếp tục với Google"]') == False:
@@ -2435,21 +2535,30 @@ class threadToolTds(QThread):
         sleep(2)
         self.dict_data.update({'code': 100, 'status': 'Click vào gmail để tiếp tục'})
         self.sendDataUpMainScreen.emit(self.dict_data)
-        self.adb.checkXml(element='//node[@resource-id="com.google.android.gms:id/account_name"]')
+        self.adb.checkXml(CountRepeat=30, element='//node[@resource-id="com.google.android.gms:id/account_name"]')
         
+        self.dict_data.update({'code': 100, 'status': f'Đợi tiktok xác minh gmail lần 1.'})
         if self.adb.checkXml(CountRepeat=10, element='//node[@text="TikTok muốn truy cập vào Tài khoản Google của bạn"]', click=False):
             self.dict_data.update({'code': 100, 'status': f'Cho phép tiktok truy cập vào gmail.'})
             self.sendDataUpMainScreen.emit(self.dict_data)
             self.adb.runShell("input swipe 224 1435 143 285 100")
             self.adb.checkXml(CountRepeat=5, element='//node[@text="Cho phép"]', Xoffsetplus=50, Yoffsetplus=50)
 
-        self.dict_data.update({'code': 100, 'status': f'Đợi tiktok xác minh gmail.'})
+        self.dict_data.update({'code': 100, 'status': f'Đợi tiktok xác minh gmail lần 2.'})
         self.sendDataUpMainScreen.emit(self.dict_data)
         
         if self.loginAndRun == True:
-            return True
+            sleep(20)
+            retries = 0
+            while retries < max_retries: 
+                if self.adb.checkXml(CountRepeat=1, element='//node[@content-desc="Tiếp tục với Google" or @text="Tiếp tục với Google"]', click=False):
+                    return 'log_fail'
+                elif self.adb.find_image('img\\tuchoi_8.png', 1, row=self.row) or self.adb.find_image('img\\tuchoi9.png', 1, row=self.row) or self.adb.find_image('img\\user_8.png', 1, click=False, threshold=0.8, row=self.row):
+                    return 'registered'
+                retries += 1
+                sleep(5)
+            return False
         for _ in range(4):
-            # print(_)
             if self.adb.checkXml(CountRepeat=5, element='//node[@text="Ngày sinh"]'):
                 self.dict_data.update({'code': 100, 'status': f'Chọn ngày sinh'})
                 self.sendDataUpMainScreen.emit(self.dict_data)

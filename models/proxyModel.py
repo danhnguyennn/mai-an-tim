@@ -8,6 +8,7 @@ class GenProxy():
         with open('data\\proxy\\proxy.txt', 'r', encoding='utf-8') as file:
             self.arr_proxy = file.readlines()
         self.allow_ip = requests.get('https://icanhazip.com').text.strip()
+        # self.allow_ip = '171.250.246.88'
         self.check_proxy = 0
 
     def getProxy(self):
@@ -62,7 +63,7 @@ class GenProxy():
     def DTProxy(self, key):
         try:
             get = requests.get(f'https://app.proxydt.com/api/public/proxy/get-new-proxy?license={key}&authen_ips={self.allow_ip}', headers={"Accept":"application/json", "Content-Type":"application/json"}).json()
-            # print(key, get)
+            # print(get)
             proxy = get['data']['http_ipv4'].replace('http://', '')
             return proxy
         except:
@@ -80,7 +81,7 @@ class GenProxy():
             prx = self.DTProxy(key)
             print("Changing proxy ...", end='\r')
             if prx: return prx
-            sleep(5)
+            sleep(10)
     # tinsoft
     def Tinsoft(self, keyPrx):
         try:
@@ -154,7 +155,7 @@ class GenProxy():
     def ProxyNo1(self, key):
         try:
             get = requests.get('https://app.proxyno1.com/api/change-key-ip/'+key).json()
-            print(get)
+            print(get, end='\r')
             if get['status'] == 0: return True
         except:
             return False
@@ -186,8 +187,23 @@ class GenProxy():
             if "ok" in str(requests.get("http://"+ips+"/proxy_getip?proxy="+proxys).text):
                 return True
         except: pass
+    # wwproxy
+    def Wwproxy(self, key):
+        try:
+            get = requests.get(f'https://wwproxy.com/api/client/proxy/available?key={key}&provinceId=-1').json()
+            print(get, end='\r')
+            status = get['status']
+            if status == 'OK':
+                proxy = get['data']['proxy']
+                return proxy
+        except:
+            return False
+        
 
-# a = GenProxy().DTProxy('e6893dea-f50c-4bfd-a340-fc8c5d842816')
+
+
+
+# a = GenProxy().Wwproxy('6146a566-4138-419e-bde6-48affe27dcbc')
 # print(a)
 
 # proxie = {

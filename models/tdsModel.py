@@ -170,7 +170,7 @@ class API_TDS:
                     'renewpass': newpass,
                 }
                 response = self.ss.post('https://traodoisub.com/scr/doipass.php', data=data, proxies=proxie, timeout=10).text
-                print(response)
+                # print(response)
                 if response == '0':
                     return True
                 return False
